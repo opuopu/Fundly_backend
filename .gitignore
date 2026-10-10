@@ -1,0 +1,30 @@
+# Design files and assets
+design/
+*.design
+*.fig
+*.sketch
+*.xd
+
+# Binaries & build artifacts
+/fundly
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.html
+
+# Environment variables & local secrets
+.env
+*.env
+*.env.local
+
+# IDE & OS metadata
+.DS_Store
+.idea/
+.vscode/
