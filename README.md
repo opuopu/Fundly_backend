@@ -8,6 +8,7 @@ Fundly is a financial application built with Go following **Domain-Driven Design
 
 The codebase is structured into clear architectural boundaries adhering to DDD principles.
 * 📖 **REST API Specification:** Detailed API design and contract specification is available in [`docs/rest-api-design.md`](docs/rest-api-design.md).
+* ✅ **API Implementation Checklist:** Track progress of all 46 endpoints in [`TODO.md`](TODO.md).
 
 ```text
 fundly/
@@ -54,22 +55,29 @@ fundly/
 
 ## 🚀 Getting Started
 
-### Run Tests
+### 1. Start PostgreSQL (Docker)
+A pre-configured Docker Compose file is provided with port `5435` (to avoid common local port conflicts):
+```bash
+docker compose up -d
+```
+
+### 2. Configure Environment
+Copy the example environment file:
+```bash
+cp .env.example .env
+```
+
+### 3. Run Tests
 ```bash
 go test -v ./...
 ```
 
-### Build Project
-```bash
-go build ./...
-```
-
-### Start Server
+### 4. Build & Run Application
 ```bash
 go run ./cmd/fundly
 ```
-
-The health check endpoint is accessible at:
+* On boot, the application connects to PostgreSQL and automatically applies embedded SQL schema migrations from [`migrations/`](migrations/).
+* The health check endpoint is accessible at:
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8081/health
 ```

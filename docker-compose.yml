@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fundly-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-fundly}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fundly123}
+      POSTGRES_DB: ${DB_NAME:-fundly}
+    ports:
+      - "${DB_PORT:-5435}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-fundly} -d ${DB_NAME:-fundly}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
