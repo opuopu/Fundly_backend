@@ -12,6 +12,7 @@ import (
 
 	accountapp "github.com/Dodul01/fundly/internal/application/account"
 	"github.com/Dodul01/fundly/internal/application/auth"
+	categoryapp "github.com/Dodul01/fundly/internal/application/category"
 	"github.com/Dodul01/fundly/internal/application/transfer"
 	userapp "github.com/Dodul01/fundly/internal/application/user"
 	"github.com/Dodul01/fundly/internal/config"
@@ -51,6 +52,7 @@ func main() {
 	var authHandler *infrahttp.AuthHandler
 	var userHandler *infrahttp.UserHandler
 	var accountHandler *infrahttp.AccountHandler
+	var categoryHandler *infrahttp.CategoryHandler
 	var authMiddleware *infrahttp.AuthMiddleware
 	if pool != nil {
 		userRepo := postgres.NewUserRepository(pool)
@@ -90,6 +92,13 @@ func main() {
 		deleteAccountUC := accountapp.NewDeleteAccountUseCase(accRepo)
 		getSummaryUC := accountapp.NewGetAccountsSummaryUseCase(accRepo)
 		accountHandler = infrahttp.NewAccountHandler(listAccountsUC, createAccountUC, getAccountUC, updateAccountUC, deleteAccountUC, getSummaryUC)
+
+		categoryRepo := postgres.NewCategoryRepository(pool)
+		listCategoriesUC := categoryapp.NewListCategoriesUseCase(categoryRepo)
+		createCategoryUC := categoryapp.NewCreateCategoryUseCase(categoryRepo)
+		updateCategoryUC := categoryapp.NewUpdateCategoryUseCase(categoryRepo)
+		deleteCategoryUC := categoryapp.NewDeleteCategoryUseCase(categoryRepo)
+		categoryHandler = infrahttp.NewCategoryHandler(listCategoriesUC, createCategoryUC, updateCategoryUC, deleteCategoryUC)
 	}
 
 	// 4. Initialize HTTP Handler & Server
@@ -124,6 +133,11 @@ func main() {
 		mux.HandleFunc("/api/v1/accounts", authMiddleware.RequireAuth(accountHandler.HandleAccounts))
 		mux.HandleFunc("/api/v1/accounts/summary", authMiddleware.RequireAuth(accountHandler.GetSummary))
 		mux.HandleFunc("/api/v1/accounts/{id}", authMiddleware.RequireAuth(accountHandler.HandleAccountByID))
+	}
+
+	if categoryHandler != nil && authMiddleware != nil {
+		mux.HandleFunc("/api/v1/categories", authMiddleware.RequireAuth(categoryHandler.HandleCategories))
+		mux.HandleFunc("/api/v1/categories/{id}", authMiddleware.RequireAuth(categoryHandler.HandleCategoryByID))
 	}
 
 	serverAddr := ":" + cfg.Port

@@ -1,8 +1,8 @@
 # Fundly API Implementation Roadmap & Checklist
 
 > **Total Endpoints:** 46  
-> **Completed:** 19 / 46 (41.3%)  
-> **Progress:** `[█████████░░░░░░░░░░░] 41.3%`  
+> **Completed:** 23 / 46 (50.0%)  
+> **Progress:** `[█████████████░░░░░░░] 50.0%`  
 > **Specification Reference:** [`docs/rest-api-design.md`](docs/rest-api-design.md)
 
 ---
@@ -14,8 +14,8 @@
 | **1. Authentication** | 9 | 9 / 9 | 🟢 **Completed (100%)** |
 | **2. User Profile** | 4 | 4 / 4 | 🟢 **Completed (100%)** |
 | **3. Accounts** | 6 | 6 / 6 | 🟢 **Completed (100%)** |
-| **4. Categories** | 4 | 0 / 4 | 🟡 In Progress (#20 next) |
-| **5. Transactions** | 7 | 0 / 7 | ⚪ Pending |
+| **4. Categories** | 4 | 4 / 4 | 🟢 **Completed (100%)** |
+| **5. Transactions** | 7 | 0 / 7 | 🟡 In Progress (#24 next) |
 | **6. Budgets** | 5 | 0 / 5 | ⚪ Pending |
 | **7. Analytics & Stats** | 2 | 0 / 2 | ⚪ Pending |
 | **8. Reports & Comparison** | 1 | 0 / 1 | ⚪ Pending |
@@ -116,10 +116,21 @@
 
 ## 4. Categories Domain (`/api/v1/categories`)
 
-- [ ] **#20** `GET /api/v1/categories` — List transaction categories (Income / Expense)
-- [ ] **#21** `POST /api/v1/categories` — Create custom category (name, type, icon, color)
-- [ ] **#22** `PATCH /api/v1/categories/:id` — Update category details
-- [ ] **#23** `DELETE /api/v1/categories/:id` — Delete custom category
+- [x] **#20** `GET /api/v1/categories` — List transaction categories (Income / Expense)  
+  *Implemented in:* [`internal/application/category/list_categories.go`](internal/application/category/list_categories.go), [`internal/infrastructure/http/category_handler.go`](internal/infrastructure/http/category_handler.go)  
+  *Tests:* [`internal/application/category/list_categories_test.go`](internal/application/category/list_categories_test.go), [`internal/infrastructure/http/category_handler_test.go`](internal/infrastructure/http/category_handler_test.go)
+
+- [x] **#21** `POST /api/v1/categories` — Create custom category (name, type, icon, color)  
+  *Implemented in:* [`internal/application/category/create_category.go`](internal/application/category/create_category.go), [`internal/infrastructure/http/category_handler.go`](internal/infrastructure/http/category_handler.go)  
+  *Tests:* [`internal/application/category/create_category_test.go`](internal/application/category/create_category_test.go), [`internal/infrastructure/http/category_handler_test.go`](internal/infrastructure/http/category_handler_test.go)
+
+- [x] **#22** `PATCH /api/v1/categories/:id` — Update category details  
+  *Implemented in:* [`internal/application/category/update_category.go`](internal/application/category/update_category.go), [`internal/infrastructure/http/category_handler.go`](internal/infrastructure/http/category_handler.go)  
+  *Tests:* [`internal/application/category/update_category_test.go`](internal/application/category/update_category_test.go), [`internal/infrastructure/http/category_handler_test.go`](internal/infrastructure/http/category_handler_test.go)
+
+- [x] **#23** `DELETE /api/v1/categories/:id` — Delete custom category  
+  *Implemented in:* [`internal/application/category/delete_category.go`](internal/application/category/delete_category.go), [`internal/infrastructure/http/category_handler.go`](internal/infrastructure/http/category_handler.go)  
+  *Tests:* [`internal/application/category/delete_category_test.go`](internal/application/category/delete_category_test.go), [`internal/infrastructure/http/category_handler_test.go`](internal/infrastructure/http/category_handler_test.go)
 
 ---
 
