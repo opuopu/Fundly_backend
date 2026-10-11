@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +16,12 @@ import (
 	infrahttp "github.com/Dodul01/fundly/internal/infrastructure/http"
 	"github.com/Dodul01/fundly/internal/infrastructure/security"
 )
+
+type mockStorageForHandler struct{}
+
+func (m *mockStorageForHandler) SaveAvatar(ctx context.Context, userID, filename, contentType string, reader io.Reader) (string, error) {
+	return "/uploads/avatars/" + filename, nil
+}
 
 type mockUserRepoForHandler struct {
 	usersByID    map[string]*domainUser.User
@@ -61,7 +69,8 @@ func setupTestUserHandler(repo *mockUserRepoForHandler) *infrahttp.UserHandler {
 	updateProfileUC := userapp.NewUpdateProfileUseCase(repo)
 	hasher := security.NewBcryptHasher()
 	changePasswordUC := userapp.NewChangePasswordUseCase(repo, hasher)
-	return infrahttp.NewUserHandler(getProfileUC, updateProfileUC, changePasswordUC)
+	uploadAvatarUC := userapp.NewUploadAvatarUseCase(repo, &mockStorageForHandler{})
+	return infrahttp.NewUserHandler(getProfileUC, updateProfileUC, changePasswordUC, uploadAvatarUC)
 }
 
 func TestUserHandler_GetProfile_Success(t *testing.T) {
@@ -502,6 +511,136 @@ func TestUserHandler_ChangePassword_Unauthenticated(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/users/me/password", bytes.NewReader([]byte("{}")))
 	rec := httptest.NewRecorder()
 	handler.ChangePassword(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", rec.Code)
+	}
+}
+
+func TestUserHandler_UploadAvatar_Success(t *testing.T) {
+	repo := &mockUserRepoForHandler{
+		usersByID: make(map[string]*domainUser.User),
+	}
+	u, _ := domainUser.New("usr_123", "alice@example.com", "Alice", "hashed_pwd")
+	repo.usersByID[u.ID] = u
+
+	handler := setupTestUserHandler(repo)
+
+	// Create multipart body
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("avatar", "test.png")
+	if err != nil {
+		t.Fatalf("failed to create form file: %v", err)
+	}
+	pngBytes := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	_, _ = part.Write(pngBytes)
+	_ = writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/users/me/avatar", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	ctx := context.WithValue(req.Context(), infrahttp.UserIDKey, "usr_123")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.UploadAvatar(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d, body: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp struct {
+		Success bool                       `json:"success"`
+		Message string                     `json:"message"`
+		Data    userapp.UploadAvatarResult `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+
+	if !resp.Success {
+		t.Errorf("expected success true")
+	}
+	if resp.Data.AvatarURL == "" {
+		t.Errorf("expected non-empty avatar URL")
+	}
+	if resp.Message != "Avatar uploaded successfully" {
+		t.Errorf("expected 'Avatar uploaded successfully', got '%s'", resp.Message)
+	}
+}
+
+func TestUserHandler_UploadAvatar_MissingFile(t *testing.T) {
+	repo := &mockUserRepoForHandler{usersByID: make(map[string]*domainUser.User)}
+	handler := setupTestUserHandler(repo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/users/me/avatar", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	ctx := context.WithValue(req.Context(), infrahttp.UserIDKey, "usr_123")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.UploadAvatar(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestUserHandler_UploadAvatar_InvalidFormat(t *testing.T) {
+	repo := &mockUserRepoForHandler{
+		usersByID: make(map[string]*domainUser.User),
+	}
+	u, _ := domainUser.New("usr_123", "alice@example.com", "Alice", "hashed_pwd")
+	repo.usersByID[u.ID] = u
+
+	handler := setupTestUserHandler(repo)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, _ := writer.CreateFormFile("avatar", "test.txt")
+	_, _ = part.Write([]byte("not an image"))
+	_ = writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/users/me/avatar", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	ctx := context.WithValue(req.Context(), infrahttp.UserIDKey, "usr_123")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.UploadAvatar(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", rec.Code)
+	}
+}
+
+func TestUserHandler_UploadAvatar_InvalidMethod(t *testing.T) {
+	repo := &mockUserRepoForHandler{usersByID: make(map[string]*domainUser.User)}
+	handler := setupTestUserHandler(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/avatar", nil)
+	ctx := context.WithValue(req.Context(), infrahttp.UserIDKey, "usr_123")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.UploadAvatar(rec, req)
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", rec.Code)
+	}
+}
+
+func TestUserHandler_UploadAvatar_Unauthenticated(t *testing.T) {
+	repo := &mockUserRepoForHandler{usersByID: make(map[string]*domainUser.User)}
+	handler := setupTestUserHandler(repo)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/users/me/avatar", nil)
+	rec := httptest.NewRecorder()
+	handler.UploadAvatar(rec, req)
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d", rec.Code)

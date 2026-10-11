@@ -25,6 +25,10 @@ func (m *mockAccountRepo) GetByUserID(_ context.Context, _ string) ([]*account.A
 	return nil, nil
 }
 
+func (m *mockAccountRepo) GetByUserIDAndGroup(_ context.Context, _, _ string) ([]*account.Account, error) {
+	return nil, nil
+}
+
 func (m *mockAccountRepo) Create(_ context.Context, acc *account.Account) error {
 	m.accounts[acc.ID] = acc
 	return nil
@@ -32,6 +36,11 @@ func (m *mockAccountRepo) Create(_ context.Context, acc *account.Account) error 
 
 func (m *mockAccountRepo) Update(_ context.Context, acc *account.Account) error {
 	m.accounts[acc.ID] = acc
+	return nil
+}
+
+func (m *mockAccountRepo) Delete(_ context.Context, id string) error {
+	delete(m.accounts, id)
 	return nil
 }
 

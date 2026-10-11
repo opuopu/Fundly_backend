@@ -20,7 +20,7 @@ func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 
 func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Account, error) {
 	query := `
-		SELECT id, user_id, currency, balance, created_at, updated_at
+		SELECT id, user_id, name, group_type, currency, balance, COALESCE(description, ''), created_at, updated_at
 		FROM accounts
 		WHERE id = $1
 	`
@@ -29,8 +29,11 @@ func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Ac
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&acc.ID,
 		&acc.UserID,
+		&acc.Name,
+		&acc.Group,
 		&acc.Currency,
 		&acc.Balance,
+		&acc.Description,
 		&acc.CreatedAt,
 		&acc.UpdatedAt,
 	)
@@ -47,7 +50,7 @@ func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Ac
 
 func (r *AccountRepository) GetByUserID(ctx context.Context, userID string) ([]*account.Account, error) {
 	query := `
-		SELECT id, user_id, currency, balance, created_at, updated_at
+		SELECT id, user_id, name, group_type, currency, balance, COALESCE(description, ''), created_at, updated_at
 		FROM accounts
 		WHERE user_id = $1
 		ORDER BY created_at ASC
@@ -65,8 +68,51 @@ func (r *AccountRepository) GetByUserID(ctx context.Context, userID string) ([]*
 		if err := rows.Scan(
 			&acc.ID,
 			&acc.UserID,
+			&acc.Name,
+			&acc.Group,
 			&acc.Currency,
 			&acc.Balance,
+			&acc.Description,
+			&acc.CreatedAt,
+			&acc.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning account row: %w", err)
+		}
+		accounts = append(accounts, &acc)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating account rows: %w", err)
+	}
+
+	return accounts, nil
+}
+
+func (r *AccountRepository) GetByUserIDAndGroup(ctx context.Context, userID, group string) ([]*account.Account, error) {
+	query := `
+		SELECT id, user_id, name, group_type, currency, balance, COALESCE(description, ''), created_at, updated_at
+		FROM accounts
+		WHERE user_id = $1 AND LOWER(group_type) = LOWER($2)
+		ORDER BY created_at ASC
+	`
+
+	rows, err := r.pool.Query(ctx, query, userID, group)
+	if err != nil {
+		return nil, fmt.Errorf("querying accounts by user id and group: %w", err)
+	}
+	defer rows.Close()
+
+	var accounts []*account.Account
+	for rows.Next() {
+		var acc account.Account
+		if err := rows.Scan(
+			&acc.ID,
+			&acc.UserID,
+			&acc.Name,
+			&acc.Group,
+			&acc.Currency,
+			&acc.Balance,
+			&acc.Description,
 			&acc.CreatedAt,
 			&acc.UpdatedAt,
 		); err != nil {
@@ -84,17 +130,25 @@ func (r *AccountRepository) GetByUserID(ctx context.Context, userID string) ([]*
 
 func (r *AccountRepository) Create(ctx context.Context, acc *account.Account) error {
 	query := `
-		INSERT INTO accounts (id, user_id, currency, balance, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO accounts (id, user_id, name, group_type, currency, balance, description, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
+
+	var descVal *string
+	if acc.Description != "" {
+		descVal = &acc.Description
+	}
 
 	_, err := r.pool.Exec(
 		ctx,
 		query,
 		acc.ID,
 		acc.UserID,
+		acc.Name,
+		acc.Group,
 		acc.Currency,
 		acc.Balance,
+		descVal,
 		acc.CreatedAt,
 		acc.UpdatedAt,
 	)
@@ -108,13 +162,36 @@ func (r *AccountRepository) Create(ctx context.Context, acc *account.Account) er
 func (r *AccountRepository) Update(ctx context.Context, acc *account.Account) error {
 	query := `
 		UPDATE accounts
-		SET currency = $2, balance = $3, updated_at = $4
+		SET name = $2, group_type = $3, currency = $4, balance = $5, description = $6, updated_at = $7
 		WHERE id = $1
 	`
 
-	cmdTag, err := r.pool.Exec(ctx, query, acc.ID, acc.Currency, acc.Balance, acc.UpdatedAt)
+	var descVal *string
+	if acc.Description != "" {
+		descVal = &acc.Description
+	}
+
+	cmdTag, err := r.pool.Exec(ctx, query, acc.ID, acc.Name, acc.Group, acc.Currency, acc.Balance, descVal, acc.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("updating account: %w", err)
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return account.ErrAccountNotFound
+	}
+
+	return nil
+}
+
+func (r *AccountRepository) Delete(ctx context.Context, id string) error {
+	query := `
+		DELETE FROM accounts
+		WHERE id = $1
+	`
+
+	cmdTag, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("deleting account: %w", err)
 	}
 
 	if cmdTag.RowsAffected() == 0 {

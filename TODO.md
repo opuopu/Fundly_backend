@@ -1,8 +1,8 @@
 # Fundly API Implementation Roadmap & Checklist
 
 > **Total Endpoints:** 46  
-> **Completed:** 12 / 46 (26.1%)  
-> **Progress:** `[█████░░░░░░░░░░░░░░░] 26.1%`  
+> **Completed:** 19 / 46 (41.3%)  
+> **Progress:** `[█████████░░░░░░░░░░░] 41.3%`  
 > **Specification Reference:** [`docs/rest-api-design.md`](docs/rest-api-design.md)
 
 ---
@@ -12,9 +12,9 @@
 | Module | Endpoints | Completed | Status |
 | :--- | :---: | :---: | :--- |
 | **1. Authentication** | 9 | 9 / 9 | 🟢 **Completed (100%)** |
-| **2. User Profile** | 4 | 3 / 4 | 🟡 In Progress (#13 next) |
-| **3. Accounts** | 6 | 0 / 6 | ⚪ Pending |
-| **4. Categories** | 4 | 0 / 4 | ⚪ Pending |
+| **2. User Profile** | 4 | 4 / 4 | 🟢 **Completed (100%)** |
+| **3. Accounts** | 6 | 6 / 6 | 🟢 **Completed (100%)** |
+| **4. Categories** | 4 | 0 / 4 | 🟡 In Progress (#20 next) |
 | **5. Transactions** | 7 | 0 / 7 | ⚪ Pending |
 | **6. Budgets** | 5 | 0 / 5 | ⚪ Pending |
 | **7. Analytics & Stats** | 2 | 0 / 2 | ⚪ Pending |
@@ -80,18 +80,37 @@
   *Implemented in:* [`internal/application/user/change_password.go`](internal/application/user/change_password.go), [`internal/infrastructure/http/user_handler.go`](internal/infrastructure/http/user_handler.go)  
   *Tests:* [`internal/application/user/change_password_test.go`](internal/application/user/change_password_test.go), [`internal/infrastructure/http/user_handler_test.go`](internal/infrastructure/http/user_handler_test.go)
 
-- [ ] **#13** `POST /api/v1/users/me/avatar` — Upload and update user profile avatar
+- [x] **#13** `POST /api/v1/users/me/avatar` — Upload and update user profile avatar  
+  *Implemented in:* [`internal/application/user/upload_avatar.go`](internal/application/user/upload_avatar.go), [`internal/infrastructure/storage/local_storage.go`](internal/infrastructure/storage/local_storage.go), [`internal/infrastructure/http/user_handler.go`](internal/infrastructure/http/user_handler.go)  
+  *Tests:* [`internal/application/user/upload_avatar_test.go`](internal/application/user/upload_avatar_test.go), [`internal/infrastructure/storage/local_storage_test.go`](internal/infrastructure/storage/local_storage_test.go), [`internal/infrastructure/http/user_handler_test.go`](internal/infrastructure/http/user_handler_test.go)
 
 ---
 
 ## 3. Accounts Domain (`/api/v1/accounts`)
 
-- [ ] **#14** `GET /api/v1/accounts` — List all user accounts with current balances
-- [ ] **#15** `POST /api/v1/accounts` — Create a new financial account (Cash, Card, Savings, etc.)
-- [ ] **#16** `GET /api/v1/accounts/:id` — Get account details by ID
-- [ ] **#17** `PATCH /api/v1/accounts/:id` — Update account details (name, group, description)
-- [ ] **#18** `DELETE /api/v1/accounts/:id` — Delete / archive an account
-- [ ] **#19** `GET /api/v1/accounts/summary` — Get aggregated balance totals (Cash, Cards, Net Balance)
+- [x] **#14** `GET /api/v1/accounts` — List all user accounts with current balances  
+  *Implemented in:* [`internal/application/account/list_accounts.go`](internal/application/account/list_accounts.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/list_accounts_test.go`](internal/application/account/list_accounts_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
+
+- [x] **#15** `POST /api/v1/accounts` — Create a new financial account (Cash, Card, Savings, etc.)  
+  *Implemented in:* [`internal/application/account/create_account.go`](internal/application/account/create_account.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/create_account_test.go`](internal/application/account/create_account_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
+
+- [x] **#16** `GET /api/v1/accounts/:id` — Get account details by ID  
+  *Implemented in:* [`internal/application/account/get_account.go`](internal/application/account/get_account.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/get_account_test.go`](internal/application/account/get_account_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
+
+- [x] **#17** `PATCH /api/v1/accounts/:id` — Update account details (name, group, description)  
+  *Implemented in:* [`internal/application/account/update_account.go`](internal/application/account/update_account.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/update_account_test.go`](internal/application/account/update_account_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
+
+- [x] **#18** `DELETE /api/v1/accounts/:id` — Delete / archive an account  
+  *Implemented in:* [`internal/application/account/delete_account.go`](internal/application/account/delete_account.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/delete_account_test.go`](internal/application/account/delete_account_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
+
+- [x] **#19** `GET /api/v1/accounts/summary` — Get aggregated balance totals (Cash, Cards, Net Balance)  
+  *Implemented in:* [`internal/application/account/get_summary.go`](internal/application/account/get_summary.go), [`internal/infrastructure/http/account_handler.go`](internal/infrastructure/http/account_handler.go)  
+  *Tests:* [`internal/application/account/get_summary_test.go`](internal/application/account/get_summary_test.go), [`internal/infrastructure/http/account_handler_test.go`](internal/infrastructure/http/account_handler_test.go)
 
 ---
 

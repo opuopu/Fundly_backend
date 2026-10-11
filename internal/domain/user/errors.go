@@ -17,4 +17,6 @@ var (
 	ErrInvalidRefreshToken       = errors.New("invalid or expired refresh token")
 	ErrPasswordMismatch          = errors.New("passwords do not match")
 	ErrInvalidCurrentPassword    = errors.New("current password is incorrect")
+	ErrInvalidImageFormat        = errors.New("invalid image format, only jpeg, png, and webp are allowed")
+	ErrImageTooLarge             = errors.New("image size exceeds maximum allowed limit of 5MB")
 )

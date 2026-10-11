@@ -13,17 +13,20 @@ type UserHandler struct {
 	getProfileUC     *userapp.GetProfileUseCase
 	updateProfileUC  *userapp.UpdateProfileUseCase
 	changePasswordUC *userapp.ChangePasswordUseCase
+	uploadAvatarUC   *userapp.UploadAvatarUseCase
 }
 
 func NewUserHandler(
 	getProfileUC *userapp.GetProfileUseCase,
 	updateProfileUC *userapp.UpdateProfileUseCase,
 	changePasswordUC *userapp.ChangePasswordUseCase,
+	uploadAvatarUC *userapp.UploadAvatarUseCase,
 ) *UserHandler {
 	return &UserHandler{
 		getProfileUC:     getProfileUC,
 		updateProfileUC:  updateProfileUC,
 		changePasswordUC: changePasswordUC,
+		uploadAvatarUC:   uploadAvatarUC,
 	}
 }
 
@@ -154,4 +157,61 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, nil, "Password changed successfully")
+}
+
+// UploadAvatar handles POST /api/v1/users/me/avatar.
+func (h *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		JSONError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
+		return
+	}
+
+	userID := UserIDFromContext(r.Context())
+	if userID == "" {
+		JSONError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Missing authenticated user context")
+		return
+	}
+
+	// Limit request body to 5MB + 1KB overhead
+	r.Body = http.MaxBytesReader(w, r.Body, userapp.MaxAvatarSize+1024)
+	if err := r.ParseMultipartForm(userapp.MaxAvatarSize); err != nil {
+		JSONError(w, http.StatusBadRequest, "FILE_TOO_LARGE", "Uploaded file exceeds maximum allowed limit of 5MB")
+		return
+	}
+
+	file, header, err := r.FormFile("avatar")
+	if err != nil {
+		JSONError(w, http.StatusBadRequest, "MISSING_FILE", "Image file is required under the 'avatar' form field")
+		return
+	}
+	defer file.Close()
+
+	res, err := h.uploadAvatarUC.Execute(r.Context(), userID, userapp.UploadAvatarInput{
+		Filename:    header.Filename,
+		ContentType: header.Header.Get("Content-Type"),
+		Size:        header.Size,
+		Reader:      file,
+	})
+	if err != nil {
+		if errors.Is(err, domainUser.ErrImageTooLarge) {
+			JSONError(w, http.StatusBadRequest, "FILE_TOO_LARGE", "Image size exceeds maximum allowed limit of 5MB")
+			return
+		}
+		if errors.Is(err, domainUser.ErrInvalidImageFormat) {
+			JSONError(w, http.StatusBadRequest, "INVALID_FORMAT", "Only jpeg, png, and webp images are allowed")
+			return
+		}
+		if errors.Is(err, domainUser.ErrInvalidUserData) {
+			JSONError(w, http.StatusBadRequest, "INVALID_INPUT", "Invalid image payload")
+			return
+		}
+		if errors.Is(err, domainUser.ErrUserNotFound) {
+			JSONError(w, http.StatusNotFound, "NOT_FOUND", "User profile not found")
+			return
+		}
+		JSONError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to upload avatar")
+		return
+	}
+
+	JSON(w, http.StatusOK, res, "Avatar uploaded successfully")
 }

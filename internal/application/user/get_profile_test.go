@@ -37,8 +37,13 @@ func (m *mockUserRepo) Save(ctx context.Context, user *domainUser.User) error {
 	if m.err != nil {
 		return m.err
 	}
+	if m.usersByID == nil {
+		m.usersByID = make(map[string]*domainUser.User)
+	}
 	m.usersByID[user.ID] = user
-	m.usersByEmail[user.Email] = user
+	if m.usersByEmail != nil {
+		m.usersByEmail[user.Email] = user
+	}
 	return nil
 }
 

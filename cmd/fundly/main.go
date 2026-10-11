@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	accountapp "github.com/Dodul01/fundly/internal/application/account"
 	"github.com/Dodul01/fundly/internal/application/auth"
 	"github.com/Dodul01/fundly/internal/application/transfer"
 	userapp "github.com/Dodul01/fundly/internal/application/user"
@@ -17,6 +18,7 @@ import (
 	infrahttp "github.com/Dodul01/fundly/internal/infrastructure/http"
 	"github.com/Dodul01/fundly/internal/infrastructure/persistence/postgres"
 	"github.com/Dodul01/fundly/internal/infrastructure/security"
+	"github.com/Dodul01/fundly/internal/infrastructure/storage"
 )
 
 func main() {
@@ -48,6 +50,7 @@ func main() {
 	// 3. Initialize Repositories and Security Providers
 	var authHandler *infrahttp.AuthHandler
 	var userHandler *infrahttp.UserHandler
+	var accountHandler *infrahttp.AccountHandler
 	var authMiddleware *infrahttp.AuthMiddleware
 	if pool != nil {
 		userRepo := postgres.NewUserRepository(pool)
@@ -76,7 +79,17 @@ func main() {
 		getProfileUC := userapp.NewGetProfileUseCase(userRepo)
 		updateProfileUC := userapp.NewUpdateProfileUseCase(userRepo)
 		changePasswordUC := userapp.NewChangePasswordUseCase(userRepo, hasher)
-		userHandler = infrahttp.NewUserHandler(getProfileUC, updateProfileUC, changePasswordUC)
+		fileStorage := storage.NewLocalFileStorage("./uploads", "/uploads")
+		uploadAvatarUC := userapp.NewUploadAvatarUseCase(userRepo, fileStorage)
+		userHandler = infrahttp.NewUserHandler(getProfileUC, updateProfileUC, changePasswordUC, uploadAvatarUC)
+
+		listAccountsUC := accountapp.NewListAccountsUseCase(accRepo)
+		createAccountUC := accountapp.NewCreateAccountUseCase(accRepo)
+		getAccountUC := accountapp.NewGetAccountUseCase(accRepo)
+		updateAccountUC := accountapp.NewUpdateAccountUseCase(accRepo)
+		deleteAccountUC := accountapp.NewDeleteAccountUseCase(accRepo)
+		getSummaryUC := accountapp.NewGetAccountsSummaryUseCase(accRepo)
+		accountHandler = infrahttp.NewAccountHandler(listAccountsUC, createAccountUC, getAccountUC, updateAccountUC, deleteAccountUC, getSummaryUC)
 	}
 
 	// 4. Initialize HTTP Handler & Server
@@ -85,6 +98,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handler.HealthCheck)
 	mux.HandleFunc("/api/v1/health", handler.HealthCheck)
+
+	// Serve static uploads
+	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))))
 
 	if authHandler != nil {
 		mux.HandleFunc("/api/v1/auth/register", authHandler.Register)
@@ -101,6 +117,13 @@ func main() {
 	if userHandler != nil && authMiddleware != nil {
 		mux.HandleFunc("/api/v1/users/me", authMiddleware.RequireAuth(userHandler.HandleMe))
 		mux.HandleFunc("/api/v1/users/me/password", authMiddleware.RequireAuth(userHandler.ChangePassword))
+		mux.HandleFunc("/api/v1/users/me/avatar", authMiddleware.RequireAuth(userHandler.UploadAvatar))
+	}
+
+	if accountHandler != nil && authMiddleware != nil {
+		mux.HandleFunc("/api/v1/accounts", authMiddleware.RequireAuth(accountHandler.HandleAccounts))
+		mux.HandleFunc("/api/v1/accounts/summary", authMiddleware.RequireAuth(accountHandler.GetSummary))
+		mux.HandleFunc("/api/v1/accounts/{id}", authMiddleware.RequireAuth(accountHandler.HandleAccountByID))
 	}
 
 	serverAddr := ":" + cfg.Port

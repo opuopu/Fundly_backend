@@ -28,3 +28,10 @@ coverage.html
 .DS_Store
 .idea/
 .vscode/
+
+# Uploaded assets
+uploads/*
+!uploads/.gitkeep
+!uploads/avatars/
+uploads/avatars/*
+!uploads/avatars/.gitkeep
