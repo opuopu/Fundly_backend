@@ -56,7 +56,7 @@ func TestRegisterUseCaseSuccess(t *testing.T) {
 	hasher := &mockHasher{}
 	otpGen := &mockOTPGen{}
 
-	uc := auth.NewRegisterUseCase(repo, hasher, otpGen)
+	uc := auth.NewRegisterUseCase(repo, hasher, otpGen, nil)
 
 	cmd := auth.RegisterCommand{
 		Email:           "newuser@example.com",
@@ -95,7 +95,7 @@ func TestRegisterUseCaseSuccess(t *testing.T) {
 
 func TestRegisterUseCaseMismatchedPassword(t *testing.T) {
 	repo := &mockUserRepo{users: make(map[string]*user.User)}
-	uc := auth.NewRegisterUseCase(repo, &mockHasher{}, &mockOTPGen{})
+	uc := auth.NewRegisterUseCase(repo, &mockHasher{}, &mockOTPGen{}, nil)
 
 	cmd := auth.RegisterCommand{
 		Email:           "user@example.com",

@@ -1,8 +1,8 @@
 # Fundly API Implementation Roadmap & Checklist
 
 > **Total Endpoints:** 46  
-> **Completed:** 23 / 46 (50.0%)  
-> **Progress:** `[█████████████░░░░░░░] 50.0%`  
+> **Completed:** 46 / 46 (100%)  
+> **Progress:** `[████████████████████████] 100%`  
 > **Specification Reference:** [`docs/rest-api-design.md`](docs/rest-api-design.md)
 
 ---
@@ -15,14 +15,14 @@
 | **2. User Profile** | 4 | 4 / 4 | 🟢 **Completed (100%)** |
 | **3. Accounts** | 6 | 6 / 6 | 🟢 **Completed (100%)** |
 | **4. Categories** | 4 | 4 / 4 | 🟢 **Completed (100%)** |
-| **5. Transactions** | 7 | 0 / 7 | 🟡 In Progress (#24 next) |
-| **6. Budgets** | 5 | 0 / 5 | ⚪ Pending |
-| **7. Analytics & Stats** | 2 | 0 / 2 | ⚪ Pending |
-| **8. Reports & Comparison** | 1 | 0 / 1 | ⚪ Pending |
-| **9. Attachments** | 3 | 0 / 3 | ⚪ Pending |
-| **10. Configuration** | 2 | 0 / 2 | ⚪ Pending |
-| **11. Feedback** | 1 | 0 / 1 | ⚪ Pending |
-| **12. Terms & Conditions** | 2 | 0 / 2 | ⚪ Pending |
+| **5. Transactions** | 7 | 7 / 7 | 🟢 **Completed (100%)** |
+| **6. Budgets** | 5 | 5 / 5 | 🟢 **Completed (100%)** |
+| **7. Analytics & Stats** | 2 | 2 / 2 | 🟢 **Completed (100%)** |
+| **8. Reports & Comparison** | 1 | 1 / 1 | 🟢 **Completed (100%)** |
+| **9. Attachments** | 3 | 3 / 3 | 🟢 **Completed (100%)** |
+| **10. Configuration** | 2 | 2 / 2 | 🟢 **Completed (100%)** |
+| **11. Feedback** | 1 | 1 / 1 | 🟢 **Completed (100%)** |
+| **12. Terms & Conditions** | 2 | 2 / 2 | 🟢 **Completed (100%)** |
 
 ---
 
@@ -136,64 +136,108 @@
 
 ## 5. Transactions Domain (`/api/v1/transactions`)
 
-- [ ] **#24** `GET /api/v1/transactions` — Query transactions with filters (`type`, `date`, `category_id`, `account_id`, pagination)
-- [ ] **#25** `POST /api/v1/transactions` — Create income/expense transaction entry
-- [ ] **#26** `GET /api/v1/transactions/:id` — Get transaction details and attachments
-- [ ] **#27** `PATCH /api/v1/transactions/:id` — Update transaction entry
-- [ ] **#28** `DELETE /api/v1/transactions/:id` — Delete transaction entry
-- [ ] **#29** `GET /api/v1/transactions/search` — Quick keyword / group search across entries
-- [ ] **#30** `POST /api/v1/transactions/transfer` — Execute money transfer between accounts
+- [x] **#24** `GET /api/v1/transactions` — Query transactions with filters (`type`, `date`, `category_id`, `account_id`, pagination)
+  *Implemented in:* [`internal/application/transaction/list_transactions.go`](internal/application/transaction/list_transactions.go), [`internal/infrastructure/http/transaction_handler.go`](internal/infrastructure/http/transaction_handler.go)
+
+- [x] **#25** `POST /api/v1/transactions` — Create income/expense transaction entry (applies account balance effect)
+  *Implemented in:* [`internal/application/transaction/create_transaction.go`](internal/application/transaction/create_transaction.go), [`internal/domain/transaction/transaction.go`](internal/domain/transaction/transaction.go)
+
+- [x] **#26** `GET /api/v1/transactions/:id` — Get transaction details
+  *Implemented in:* [`internal/application/transaction/get_transaction.go`](internal/application/transaction/get_transaction.go)
+
+- [x] **#27** `PATCH /api/v1/transactions/:id` — Update transaction entry (reconciles balances)
+  *Implemented in:* [`internal/application/transaction/update_transaction.go`](internal/application/transaction/update_transaction.go)
+
+- [x] **#28** `DELETE /api/v1/transactions/:id` — Delete transaction entry (reverses balance)
+  *Implemented in:* [`internal/application/transaction/delete_transaction.go`](internal/application/transaction/delete_transaction.go)
+
+- [x] **#29** `GET /api/v1/transactions/search` — Quick keyword search across entries
+  *Implemented in:* [`internal/application/transaction/search_transactions.go`](internal/application/transaction/search_transactions.go)
+
+- [x] **#30** `POST /api/v1/transactions/transfer` — Execute money transfer between accounts
+  *Implemented in:* [`internal/application/transaction/transfer_transaction.go`](internal/application/transaction/transfer_transaction.go), reuses [`internal/application/transfer/transfer.go`](internal/application/transfer/transfer.go)
 
 ---
 
 ## 6. Budgets Domain (`/api/v1/budgets`)
 
-- [ ] **#31** `GET /api/v1/budgets` — List monthly budgets with limit, spent, and usage percentage
-- [ ] **#32** `POST /api/v1/budgets` — Create budget allocation (category, month, limit)
-- [ ] **#33** `GET /api/v1/budgets/:id` — Get budget details by ID
-- [ ] **#34** `PATCH /api/v1/budgets/:id` — Update budget limit and metadata
-- [ ] **#35** `DELETE /api/v1/budgets/:id` — Delete budget allocation
+- [x] **#31** `GET /api/v1/budgets` — List monthly budgets with limit, spent, and usage percentage
+  *Implemented in:* [`internal/application/budget/list_budgets.go`](internal/application/budget/list_budgets.go), [`internal/infrastructure/http/budget_handler.go`](internal/infrastructure/http/budget_handler.go)
+
+- [x] **#32** `POST /api/v1/budgets` — Create budget allocation (category, month, limit)
+  *Implemented in:* [`internal/application/budget/create_budget.go`](internal/application/budget/create_budget.go), [`internal/domain/budget/budget.go`](internal/domain/budget/budget.go)
+
+- [x] **#33** `GET /api/v1/budgets/:id` — Get budget details by ID (real-time spent/remaining/usage)
+  *Implemented in:* [`internal/application/budget/get_budget.go`](internal/application/budget/get_budget.go)
+
+- [x] **#34** `PATCH /api/v1/budgets/:id` — Update budget limit and metadata
+  *Implemented in:* [`internal/application/budget/update_budget.go`](internal/application/budget/update_budget.go)
+
+- [x] **#35** `DELETE /api/v1/budgets/:id` — Delete budget allocation
+  *Implemented in:* [`internal/application/budget/delete_budget.go`](internal/application/budget/delete_budget.go)
+
+  *Spent/remaining/usage computed from EXPENSE transactions via* [`postgres.TransactionRepository.SpentByCategoryMonth`](internal/infrastructure/persistence/postgres/transaction_repo.go)
 
 ---
 
 ## 7. Analytics & Stats Domain (`/api/v1/stats`)
 
-- [ ] **#36** `GET /api/v1/stats/breakdown` — Category percentage breakdown for donut chart (`income` / `expense`, month)
-- [ ] **#37** `GET /api/v1/stats/overview` — High-level monthly overview (total income, expense, savings)
+- [x] **#36** `GET /api/v1/stats/breakdown` — Category percentage breakdown for donut chart (`income` / `expense`, month)
+  *Implemented in:* [`internal/application/stat/breakdown.go`](internal/application/stat/breakdown.go), [`internal/infrastructure/http/stat_handler.go`](internal/infrastructure/http/stat_handler.go)
+
+- [x] **#37** `GET /api/v1/stats/overview` — High-level monthly overview (income, expense, net, budget utilization)
+  *Implemented in:* [`internal/application/stat/overview.go`](internal/application/stat/overview.go)
+
+  *Aggregations in* [`postgres.StatRepository`](internal/infrastructure/persistence/postgres/stat_repo.go) *(domain model/interface in* [`internal/domain/stat/stat.go`](internal/domain/stat/stat.go)*)*
 
 ---
 
 ## 8. Reports & Comparison Domain (`/api/v1/reports`)
 
-- [ ] **#38** `POST /api/v1/reports/compare` — Compare two periods/months across selected categories
+- [x] **#38** `POST /api/v1/reports/compare` — Compare two periods/months across selected categories
+  *Implemented in:* [`internal/application/report/compare.go`](internal/application/report/compare.go), [`internal/infrastructure/http/report_handler.go`](internal/infrastructure/http/report_handler.go) *(reuses the stats aggregation)*
 
 ---
 
 ## 9. Attachments Domain (`/api/v1/attachments`)
 
-- [ ] **#39** `POST /api/v1/attachments` — Upload receipt or proof image (`multipart/form-data`)
-- [ ] **#40** `GET /api/v1/attachments/:id` — Download / view attachment metadata
-- [ ] **#41** `DELETE /api/v1/attachments/:id` — Remove attachment
+- [x] **#39** `POST /api/v1/attachments` — Upload receipt or proof image (`multipart/form-data`)
+  *Implemented in:* [`internal/application/attachment/upload_attachment.go`](internal/application/attachment/upload_attachment.go), [`internal/infrastructure/http/attachment_handler.go`](internal/infrastructure/http/attachment_handler.go)
+
+- [x] **#40** `GET /api/v1/attachments/:id` — View attachment metadata
+  *Implemented in:* [`internal/application/attachment/get_attachment.go`](internal/application/attachment/get_attachment.go)
+
+- [x] **#41** `DELETE /api/v1/attachments/:id` — Remove attachment
+  *Implemented in:* [`internal/application/attachment/delete_attachment.go`](internal/application/attachment/delete_attachment.go)
+
+  *Added `user_id` to `attachments` via* [`migrations/000002_attachments_user_id.up.sql`](migrations/000002_attachments_user_id.up.sql) *for ownership. Transactions now link `attachment_ids` on create and expose `attachment_count` (lists) / `attachments[]` (detail).*
 
 ---
 
 ## 10. Configuration Domain (`/api/v1/configuration`)
 
-- [ ] **#42** `GET /api/v1/configuration` — Retrieve user preferences and default currency
-- [ ] **#43** `PUT /api/v1/configuration` — Update default currency and application settings
+- [x] **#42** `GET /api/v1/configuration` — Retrieve user preferences and default currency (falls back to defaults)
+  *Implemented in:* [`internal/application/config/config.go`](internal/application/config/config.go), [`internal/infrastructure/http/config_handler.go`](internal/infrastructure/http/config_handler.go)
+
+- [x] **#43** `PUT /api/v1/configuration` — Update default currency and application settings (upsert)
+  *Implemented in:* [`internal/application/config/config.go`](internal/application/config/config.go), [`internal/domain/config/config.go`](internal/domain/config/config.go)
 
 ---
 
 ## 11. Feedback Domain (`/api/v1/feedback`)
 
-- [ ] **#44** `POST /api/v1/feedback` — Submit user feedback and issue report
+- [x] **#44** `POST /api/v1/feedback` — Submit user feedback and issue report
+  *Implemented in:* [`internal/application/feedback/submit_feedback.go`](internal/application/feedback/submit_feedback.go), [`internal/infrastructure/http/feedback_handler.go`](internal/infrastructure/http/feedback_handler.go)
 
 ---
 
 ## 12. Terms & Conditions Domain (`/api/v1/terms`)
 
-- [ ] **#45** `GET /api/v1/terms/latest` — Retrieve active Terms & Conditions with clauses
-- [ ] **#46** `POST /api/v1/terms/acknowledge` — Record user acceptance of Terms version
+- [x] **#45** `GET /api/v1/terms/latest` — Retrieve active Terms & Conditions with clauses (public)
+  *Implemented in:* [`internal/application/terms/get_latest.go`](internal/application/terms/get_latest.go), [`internal/infrastructure/http/terms_handler.go`](internal/infrastructure/http/terms_handler.go)
+
+- [x] **#46** `POST /api/v1/terms/acknowledge` — Record user acceptance of Terms version
+  *Implemented in:* [`internal/application/terms/acknowledge.go`](internal/application/terms/acknowledge.go), [`internal/infrastructure/persistence/postgres/terms_repo.go`](internal/infrastructure/persistence/postgres/terms_repo.go)
 
 ---
 

@@ -6,10 +6,19 @@ import (
 )
 
 type Response struct {
-	Success bool   `json:"success"`
-	Data    any    `json:"data,omitempty"`
-	Message string `json:"message,omitempty"`
-	Error   *Error `json:"error,omitempty"`
+	Success    bool        `json:"success"`
+	Data       any         `json:"data,omitempty"`
+	Message    string      `json:"message,omitempty"`
+	Pagination *Pagination `json:"pagination,omitempty"`
+	Error      *Error      `json:"error,omitempty"`
+}
+
+// Pagination is the standard paginated-response metadata (spec §3.3).
+type Pagination struct {
+	Page         int `json:"page"`
+	Limit        int `json:"limit"`
+	TotalRecords int `json:"total_records"`
+	TotalPages   int `json:"total_pages"`
 }
 
 type Error struct {
@@ -31,6 +40,17 @@ func JSON(w http.ResponseWriter, statusCode int, data any, message string) {
 		Success: statusCode >= 200 && statusCode < 300,
 		Data:    data,
 		Message: message,
+	})
+}
+
+// JSONPaginated sends a standard paginated JSON response (spec §3.3).
+func JSONPaginated(w http.ResponseWriter, statusCode int, data any, p Pagination) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_ = json.NewEncoder(w).Encode(Response{
+		Success:    statusCode >= 200 && statusCode < 300,
+		Data:       data,
+		Pagination: &p,
 	})
 }
 

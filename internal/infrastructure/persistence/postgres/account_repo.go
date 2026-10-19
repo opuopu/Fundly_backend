@@ -18,6 +18,11 @@ func NewAccountRepository(pool *pgxpool.Pool) *AccountRepository {
 	return &AccountRepository{pool: pool}
 }
 
+// db returns the active transaction bound to ctx, or the pool otherwise.
+func (r *AccountRepository) db(ctx context.Context) querier {
+	return dbFromContext(ctx, r.pool)
+}
+
 func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Account, error) {
 	query := `
 		SELECT id, user_id, name, group_type, currency, balance, COALESCE(description, ''), created_at, updated_at
@@ -26,7 +31,7 @@ func (r *AccountRepository) GetByID(ctx context.Context, id string) (*account.Ac
 	`
 
 	var acc account.Account
-	err := r.pool.QueryRow(ctx, query, id).Scan(
+	err := r.db(ctx).QueryRow(ctx, query, id).Scan(
 		&acc.ID,
 		&acc.UserID,
 		&acc.Name,
@@ -56,7 +61,7 @@ func (r *AccountRepository) GetByUserID(ctx context.Context, userID string) ([]*
 		ORDER BY created_at ASC
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID)
+	rows, err := r.db(ctx).Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("querying accounts by user id: %w", err)
 	}
@@ -96,7 +101,7 @@ func (r *AccountRepository) GetByUserIDAndGroup(ctx context.Context, userID, gro
 		ORDER BY created_at ASC
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID, group)
+	rows, err := r.db(ctx).Query(ctx, query, userID, group)
 	if err != nil {
 		return nil, fmt.Errorf("querying accounts by user id and group: %w", err)
 	}
@@ -139,7 +144,7 @@ func (r *AccountRepository) Create(ctx context.Context, acc *account.Account) er
 		descVal = &acc.Description
 	}
 
-	_, err := r.pool.Exec(
+	_, err := r.db(ctx).Exec(
 		ctx,
 		query,
 		acc.ID,
@@ -171,7 +176,7 @@ func (r *AccountRepository) Update(ctx context.Context, acc *account.Account) er
 		descVal = &acc.Description
 	}
 
-	cmdTag, err := r.pool.Exec(ctx, query, acc.ID, acc.Name, acc.Group, acc.Currency, acc.Balance, descVal, acc.UpdatedAt)
+	cmdTag, err := r.db(ctx).Exec(ctx, query, acc.ID, acc.Name, acc.Group, acc.Currency, acc.Balance, descVal, acc.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("updating account: %w", err)
 	}
@@ -189,7 +194,7 @@ func (r *AccountRepository) Delete(ctx context.Context, id string) error {
 		WHERE id = $1
 	`
 
-	cmdTag, err := r.pool.Exec(ctx, query, id)
+	cmdTag, err := r.db(ctx).Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("deleting account: %w", err)
 	}

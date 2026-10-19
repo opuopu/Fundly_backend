@@ -38,13 +38,15 @@ type RegisterUseCase struct {
 	repo   user.Repository
 	hasher PasswordHasher
 	otpGen OTPGenerator
+	mailer Mailer
 }
 
-func NewRegisterUseCase(repo user.Repository, hasher PasswordHasher, otpGen OTPGenerator) *RegisterUseCase {
+func NewRegisterUseCase(repo user.Repository, hasher PasswordHasher, otpGen OTPGenerator, mailer Mailer) *RegisterUseCase {
 	return &RegisterUseCase{
 		repo:   repo,
 		hasher: hasher,
 		otpGen: otpGen,
+		mailer: mailer,
 	}
 }
 
@@ -99,11 +101,20 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, cmd RegisterCommand) (*R
 		return nil, fmt.Errorf("failed to save user: %w", err)
 	}
 
-	// 7. Return Result
+	// 7. Dispatch the verification email (best-effort: the OTP is already persisted, so a
+	// transient mail failure does not fail registration — the user can request a resend).
+	otpSent := true
+	if uc.mailer != nil {
+		if err := uc.mailer.SendOTP(ctx, newUser.Email, fullName, otp); err != nil {
+			otpSent = false
+		}
+	}
+
+	// 8. Return Result
 	return &RegisterResult{
 		UserID:              newUser.ID,
 		Email:               newUser.Email,
-		OTPSent:             true,
+		OTPSent:             otpSent,
 		OTPExpiresInSeconds: 300,
 	}, nil
 }

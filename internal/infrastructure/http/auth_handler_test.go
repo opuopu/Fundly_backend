@@ -132,13 +132,13 @@ func newTestAuthHandler(
 		refreshValidator = &mockRefreshValidator{userID: "usr-1", email: "user@example.com"}
 	}
 	otpGen := &mockOTPGen{}
-	regUC := auth.NewRegisterUseCase(repo, hasher, otpGen)
+	regUC := auth.NewRegisterUseCase(repo, hasher, otpGen, nil)
 	verifyUC := auth.NewVerifyOTPUseCase(repo, tokenGen)
-	resendUC := auth.NewResendOTPUseCase(repo, otpGen)
+	resendUC := auth.NewResendOTPUseCase(repo, otpGen, nil)
 	loginUC := auth.NewLoginUseCase(repo, hasher, tokenGen)
 	socialUC := auth.NewSocialLoginUseCase(repo, socialValidator, tokenGen)
 	refreshUC := auth.NewRefreshTokenUseCase(repo, refreshValidator, tokenGen)
-	forgotPasswordUC := auth.NewForgotPasswordUseCase(repo, otpGen)
+	forgotPasswordUC := auth.NewForgotPasswordUseCase(repo, otpGen, nil)
 	resetPasswordUC := auth.NewResetPasswordUseCase(repo, hasher)
 	logoutUC := auth.NewLogoutUseCase(&mockBlacklist{tokens: make(map[string]bool)})
 	return infrahttp.NewAuthHandler(regUC, verifyUC, resendUC, loginUC, socialUC, refreshUC, forgotPasswordUC, resetPasswordUC, logoutUC)

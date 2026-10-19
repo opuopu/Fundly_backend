@@ -15,7 +15,7 @@ func TestForgotPasswordUseCaseSuccess(t *testing.T) {
 	}
 	otpGen := &mockOTPGen{}
 
-	uc := auth.NewForgotPasswordUseCase(repo, otpGen)
+	uc := auth.NewForgotPasswordUseCase(repo, otpGen, nil)
 
 	err := uc.Execute(context.Background(), auth.ForgotPasswordCommand{
 		Email: "user@example.com",
@@ -34,7 +34,7 @@ func TestForgotPasswordUseCaseNonExistentEmail(t *testing.T) {
 	repo := &mockUserRepo{users: make(map[string]*user.User)}
 	otpGen := &mockOTPGen{}
 
-	uc := auth.NewForgotPasswordUseCase(repo, otpGen)
+	uc := auth.NewForgotPasswordUseCase(repo, otpGen, nil)
 
 	// Should succeed without error (silent no-op) to prevent account enumeration
 	err := uc.Execute(context.Background(), auth.ForgotPasswordCommand{
@@ -49,7 +49,7 @@ func TestForgotPasswordUseCaseEmptyEmail(t *testing.T) {
 	repo := &mockUserRepo{users: make(map[string]*user.User)}
 	otpGen := &mockOTPGen{}
 
-	uc := auth.NewForgotPasswordUseCase(repo, otpGen)
+	uc := auth.NewForgotPasswordUseCase(repo, otpGen, nil)
 
 	err := uc.Execute(context.Background(), auth.ForgotPasswordCommand{
 		Email: "",

@@ -15,12 +15,14 @@ type ResendOTPCommand struct {
 type ResendOTPUseCase struct {
 	repo   user.Repository
 	otpGen OTPGenerator
+	mailer Mailer
 }
 
-func NewResendOTPUseCase(repo user.Repository, otpGen OTPGenerator) *ResendOTPUseCase {
+func NewResendOTPUseCase(repo user.Repository, otpGen OTPGenerator, mailer Mailer) *ResendOTPUseCase {
 	return &ResendOTPUseCase{
 		repo:   repo,
 		otpGen: otpGen,
+		mailer: mailer,
 	}
 }
 
@@ -42,6 +44,12 @@ func (uc *ResendOTPUseCase) Execute(ctx context.Context, cmd ResendOTPCommand) e
 
 	if err := uc.repo.Save(ctx, u); err != nil {
 		return fmt.Errorf("persisting refreshed otp: %w", err)
+	}
+
+	if uc.mailer != nil {
+		if err := uc.mailer.SendOTP(ctx, u.Email, u.FullName, newOTP); err != nil {
+			return fmt.Errorf("dispatching otp email: %w", err)
+		}
 	}
 
 	return nil

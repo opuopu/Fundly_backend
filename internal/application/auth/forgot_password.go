@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,12 +16,14 @@ type ForgotPasswordCommand struct {
 type ForgotPasswordUseCase struct {
 	repo   user.Repository
 	otpGen OTPGenerator
+	mailer Mailer
 }
 
-func NewForgotPasswordUseCase(repo user.Repository, otpGen OTPGenerator) *ForgotPasswordUseCase {
+func NewForgotPasswordUseCase(repo user.Repository, otpGen OTPGenerator, mailer Mailer) *ForgotPasswordUseCase {
 	return &ForgotPasswordUseCase{
 		repo:   repo,
 		otpGen: otpGen,
+		mailer: mailer,
 	}
 }
 
@@ -42,5 +45,15 @@ func (uc *ForgotPasswordUseCase) Execute(ctx context.Context, cmd ForgotPassword
 	resetCode := uc.otpGen.Generate()
 	u.SetOTP(resetCode, 15*time.Minute)
 
-	return uc.repo.Update(ctx, u)
+	if err := uc.repo.Update(ctx, u); err != nil {
+		return err
+	}
+
+	if uc.mailer != nil {
+		if err := uc.mailer.SendPasswordReset(ctx, u.Email, resetCode); err != nil {
+			return fmt.Errorf("dispatching reset email: %w", err)
+		}
+	}
+
+	return nil
 }

@@ -20,7 +20,7 @@ func TestResendOTPUseCaseSuccess(t *testing.T) {
 	}
 	otpGen := &mockOTPGen{} // returns "128333"
 
-	uc := auth.NewResendOTPUseCase(repo, otpGen)
+	uc := auth.NewResendOTPUseCase(repo, otpGen, nil)
 
 	err := uc.Execute(context.Background(), auth.ResendOTPCommand{Email: "user@example.com"})
 	if err != nil {
@@ -35,7 +35,7 @@ func TestResendOTPUseCaseSuccess(t *testing.T) {
 
 func TestResendOTPUseCaseUserNotFound(t *testing.T) {
 	repo := &mockUserRepo{users: make(map[string]*user.User)}
-	uc := auth.NewResendOTPUseCase(repo, &mockOTPGen{})
+	uc := auth.NewResendOTPUseCase(repo, &mockOTPGen{}, nil)
 
 	err := uc.Execute(context.Background(), auth.ResendOTPCommand{Email: "unknown@example.com"})
 	if err != user.ErrUserNotFound {

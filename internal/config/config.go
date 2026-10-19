@@ -11,6 +11,20 @@ type Config struct {
 	DatabaseURL string
 	Environment string
 	AutoMigrate bool
+
+	UploadsDir   string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	SMTPFrom     string
+	SMTPFromName string
+}
+
+// SMTPConfigured reports whether enough SMTP settings are present to send real email.
+func (c *Config) SMTPConfigured() bool {
+	return c.SMTPHost != "" && c.SMTPUsername != "" && c.SMTPPassword != ""
 }
 
 func Load() *Config {
@@ -38,6 +52,14 @@ func Load() *Config {
 		DatabaseURL: dbURL,
 		Environment: env,
 		AutoMigrate: autoMigrate,
+		UploadsDir:  getEnvOrDefault("UPLOADS_DIR", "./uploads"),
+
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     getEnvOrDefault("SMTP_PORT", "587"),
+		SMTPUsername: os.Getenv("SMTP_USERNAME"),
+		SMTPPassword: strings.TrimSpace(os.Getenv("SMTP_PASSWORD")),
+		SMTPFrom:     os.Getenv("SMTP_FROM"),
+		SMTPFromName: getEnvOrDefault("SMTP_FROM_NAME", "Fundly"),
 	}
 }
 
@@ -62,6 +84,13 @@ func loadDotEnv(filepath string) {
 		if len(parts) == 2 {
 			k := strings.TrimSpace(parts[0])
 			v := strings.TrimSpace(parts[1])
+			if !strings.HasPrefix(v, `"`) && !strings.HasPrefix(v, `'`) {
+				if idx := strings.Index(v, " #"); idx != -1 {
+					v = strings.TrimSpace(v[:idx])
+				} else if idx := strings.Index(v, "\t#"); idx != -1 {
+					v = strings.TrimSpace(v[:idx])
+				}
+			}
 			v = strings.Trim(v, `"'`)
 			if os.Getenv(k) == "" {
 				_ = os.Setenv(k, v)

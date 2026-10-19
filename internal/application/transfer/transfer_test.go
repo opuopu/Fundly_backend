@@ -2,6 +2,7 @@ package transfer_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Dodul01/fundly/internal/application/transfer"
@@ -61,11 +62,27 @@ func (m *mockTxRepo) ListByAccountID(_ context.Context, _ string) ([]*transactio
 	return nil, nil
 }
 
+func (m *mockTxRepo) List(_ context.Context, _ transaction.Filter) ([]*transaction.Transaction, int, error) {
+	return nil, 0, nil
+}
+
+func (m *mockTxRepo) Update(_ context.Context, _ *transaction.Transaction) error {
+	return nil
+}
+
+func (m *mockTxRepo) Delete(_ context.Context, _ string) error {
+	return nil
+}
+
+func (m *mockTxRepo) Search(_ context.Context, _, _ string, _ int) ([]*transaction.Transaction, error) {
+	return nil, nil
+}
+
 func TestTransferServiceSuccess(t *testing.T) {
 	accFrom := account.New("acc-1", "usr-1", "USD")
 	_ = accFrom.Deposit(1000)
 
-	accTo := account.New("acc-2", "usr-2", "USD")
+	accTo := account.New("acc-2", "usr-1", "USD")
 
 	accRepo := &mockAccountRepo{
 		accounts: map[string]*account.Account{
@@ -75,9 +92,10 @@ func TestTransferServiceSuccess(t *testing.T) {
 	}
 	txRepo := &mockTxRepo{}
 
-	service := transfer.NewService(accRepo, txRepo)
+	service := transfer.NewService(accRepo, txRepo, nil)
 
 	req := transfer.Request{
+		UserID:        "usr-1",
 		FromAccountID: "acc-1",
 		ToAccountID:   "acc-2",
 		Amount:        300,
@@ -99,5 +117,40 @@ func TestTransferServiceSuccess(t *testing.T) {
 	}
 	if len(txRepo.txs) != 1 {
 		t.Errorf("expected 1 recorded transaction, got %d", len(txRepo.txs))
+	}
+	if txRepo.txs[0].UserID != "usr-1" {
+		t.Errorf("expected recorded transfer to carry owner usr-1, got %q", txRepo.txs[0].UserID)
+	}
+}
+
+func TestTransferService_RejectsForeignAccount(t *testing.T) {
+	accFrom := account.New("acc-1", "victim", "USD")
+	_ = accFrom.Deposit(1000)
+	accTo := account.New("acc-2", "attacker", "USD")
+
+	accRepo := &mockAccountRepo{
+		accounts: map[string]*account.Account{
+			"acc-1": accFrom,
+			"acc-2": accTo,
+		},
+	}
+	txRepo := &mockTxRepo{}
+	service := transfer.NewService(accRepo, txRepo, nil)
+
+	// Attacker tries to pull funds out of the victim's account into their own.
+	_, err := service.Execute(context.Background(), transfer.Request{
+		UserID:        "attacker",
+		FromAccountID: "acc-1",
+		ToAccountID:   "acc-2",
+		Amount:        300,
+	})
+	if !errors.Is(err, account.ErrAccountNotFound) {
+		t.Fatalf("expected ErrAccountNotFound for foreign account, got %v", err)
+	}
+	if accFrom.Balance != 1000 {
+		t.Errorf("victim balance must be untouched, got %d", accFrom.Balance)
+	}
+	if len(txRepo.txs) != 0 {
+		t.Errorf("no transaction should be recorded on rejection, got %d", len(txRepo.txs))
 	}
 }
