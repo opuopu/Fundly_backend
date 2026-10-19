@@ -1,94 +1,96 @@
 # Fundly API Production Deployment Guide
 
-This guide covers deploying the Fundly Go backend with PostgreSQL, persistent storage for attachments/avatars, and automated migrations.
+This guide covers deploying the Fundly Go backend with **zero cost** and **no credit card required**.
 
 ---
 
-## 🚀 Option 1: Deploy to Render (Recommended)
+## ⚡ Option 1: Vercel + Neon PostgreSQL (100% Free, No Credit Card Required)
 
-Render provides native Docker container hosting, a managed PostgreSQL database, and persistent SSD disks for file uploads.
+Vercel provides free serverless hosting without asking for card details, and Neon provides a free managed PostgreSQL cloud database.
 
-### Step 1: Push Code to GitHub
-Ensure your repository contains [`render.yaml`](../render.yaml) and [`Dockerfile`](../Dockerfile).
+### Step 1: Create a Free Database on Neon (Takes 60 seconds)
+1. Go to [neon.tech](https://neon.tech) and click **Sign Up** (Choose "Continue with GitHub").
+2. Create a new project (name it `fundly`).
+3. Neon will display your connection string:
+   ```text
+   postgresql://fundly_owner:xxxx@ep-xyz.us-east-2.aws.neon.tech/fundly?sslmode=require
+   ```
+4. Copy this string.
 
-### Step 2: Create a Blueprint on Render
-1. Go to your [Render Dashboard](https://dashboard.render.com/).
-2. Click **New +** → **Blueprint**.
-3. Connect your GitHub repository (`fundly`).
-4. Render will automatically detect [`render.yaml`](../render.yaml) and configure:
-   - **PostgreSQL Database** (`fundly-db`): Automatically linked via `DATABASE_URL`.
-   - **Web Service** (`fundly-api`): Built from the multi-stage [`Dockerfile`](../Dockerfile).
-   - **Persistent Disk** (`fundly-uploads`): Mounted at `/app/uploads` (1GB SSD) so avatars and receipts persist across redeploys.
+### Step 2: Deploy to Vercel via CLI
+Since you are already logged in to the Vercel CLI (`allendodul6-9229`), run:
+```bash
+vercel
+```
+When prompted:
+- **Set up and deploy?** `Y`
+- **Which scope?** Choose your account (`mozammel-hoque-doduls-projects`)
+- **Link to existing project?** `N`
+- **Project name?** `fundly-api`
+- **In which directory is your code located?** `./`
+- **Want to modify settings?** `N`
 
-### Step 3: Set Secret Environment Variables
-In the Render Web Service Settings -> **Environment Variables**, fill in:
-- `SMTP_USERNAME`: `allendodul6@gmail.com`
-- `SMTP_PASSWORD`: `ndikmjvgdzbelwsk`
-- `SMTP_FROM`: `allendodul6@gmail.com`
-- `JWT_SECRET`: (Render auto-generates this, or you can paste your own 32+ character random string)
+### Step 3: Set Environment Variables on Vercel
+Run these commands to add your environment variables to Vercel:
+```bash
+vercel env add DATABASE_URL production
+# Paste your Neon connection string when prompted
 
-### Step 4: Deploy
-Click **Apply**. Render will:
-1. Provision the PostgreSQL database.
-2. Build the Docker container.
-3. Automatically execute embedded database migrations on startup (`AUTO_MIGRATE=true`).
-4. Expose the API on your Render URL (e.g. `https://fundly-api.onrender.com`).
-5. Monitor health via `GET /health`.
+vercel env add AUTO_MIGRATE production
+# Enter: true
+
+vercel env add JWT_SECRET production
+# Enter: a-secret-key-with-at-least-32-characters
+
+vercel env add SMTP_HOST production
+# Enter: smtp.gmail.com
+
+vercel env add SMTP_PORT production
+# Enter: 587
+
+vercel env add SMTP_USERNAME production
+# Enter: allendodul6@gmail.com
+
+vercel env add SMTP_PASSWORD production
+# Enter: ndikmjvgdzbelwsk
+
+vercel env add SMTP_FROM production
+# Enter: allendodul6@gmail.com
+```
+
+### Step 4: Deploy to Production
+```bash
+vercel --prod
+```
+Your Fundly API will be live on `https://fundly-api.vercel.app`!
+- Database migrations will apply automatically on the first request (`AUTO_MIGRATE=true`).
+- Test your deployment: `curl https://fundly-api.vercel.app/health`
 
 ---
 
-## 🚆 Option 2: Deploy to Railway
+## 🌐 Option 2: Expose Your Local Server via Cloudflare Tunnel (100% Free, No Card)
 
-Railway runs containers natively and provisions managed PostgreSQL in seconds.
+Since your local Go server and Docker PostgreSQL are already working 100%, you can expose them to the public internet securely without opening router ports or paying anything:
 
-### Step 1: Initialize Project on Railway
-1. Go to [railway.app](https://railway.app) and click **New Project**.
-2. Select **Provision PostgreSQL** to spin up a managed database.
-3. In the same project, click **New** → **GitHub Repo** → select `fundly`.
+```bash
+# Install cloudflared (Ubuntu/Debian)
+curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared.deb
 
-### Step 2: Configure Service Variables
-Under your `fundly` service → **Variables**:
-- Set `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (Railway references the database connection string automatically).
-- Set `AUTO_MIGRATE` = `true`.
-- Set `APP_ENV` = `production`.
-- Set `JWT_SECRET` = `<your-jwt-secret>`.
-- Set `SMTP_HOST` = `smtp.gmail.com`.
-- Set `SMTP_PORT` = `587`.
-- Set `SMTP_USERNAME` = `allendodul6@gmail.com`.
-- Set `SMTP_PASSWORD` = `ndikmjvgdzbelwsk`.
-- Set `SMTP_FROM` = `allendodul6@gmail.com`.
-
-### Step 3: Add Volume for File Uploads
-1. Go to your service settings in Railway.
-2. Under **Volumes**, click **Add Volume**.
-3. Set the Mount Path to `/app/uploads`.
-
-Railway will build using [`Dockerfile`](../Dockerfile) and start your server with live health checks.
+# Run tunnel pointing to local port 8081
+cloudflared tunnel --url http://localhost:8081
+```
+Cloudflare will give you an instant public HTTPS URL like:
+`https://your-random-subdomain.trycloudflare.com`
 
 ---
 
 ## 🐳 Option 3: Self-Host via Docker Compose (VPS / EC2 / Hetzner)
 
-If running on a private VPS (Ubuntu/Debian):
-
 ```bash
-# Clone the repository
 git clone https://github.com/Dodul01/fundly.git
 cd fundly
-
-# Copy and edit production environment variables
 cp .env.example .env
 nano .env
-
-# Build and start services in the background
 docker compose up -d --build
 ```
-
----
-
-## ℹ️ Why Vercel is Not Recommended for this Backend
-
-Vercel is built for frontend apps and serverless micro-functions (AWS Lambda under the hood). Running a full Go API like Fundly on Vercel introduces severe architectural limitations:
-1. **No Local File Storage:** Vercel functions have an ephemeral, read-only filesystem (`./uploads` cannot persist files between requests).
-2. **No Persistent Process:** Long-running server processes, background workers, and in-memory token blacklists are wiped after every invocation.
-3. **Database Connectivity:** Vercel serverless functions cannot connect to local Docker containers (`localhost`) and require an external cloud database (Neon, Supabase) with connection poolers.
