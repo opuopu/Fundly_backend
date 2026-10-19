@@ -1,29 +1,47 @@
+# Render Blueprint for the Fundly API.
+# Deploy: push this repo to GitHub, then on render.com -> New -> Blueprint, pick the repo.
+# Render reads this file, provisions the Postgres database and the web service, and wires
+# DATABASE_URL automatically. Fill the SMTP_* secrets (sync:false) in the dashboard.
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: fundly-db
+    plan: free            # free Postgres: 1 GB, expires ~30 days. Use `starter` to keep it.
+    databaseName: fundly
+    user: fundly
+
 services:
-  # Web API Service
   - type: web
     name: fundly-api
     runtime: docker
+    plan: free            # free web services sleep after ~15 min idle (cold starts).
     dockerfilePath: ./Dockerfile
-    plan: starter
-    region: oregon
     healthCheckPath: /health
-    disk:
-      name: fundly-uploads
-      mountPath: /app/uploads
-      sizeGB: 1
+    autoDeploy: true
+
+    # Persistent uploads require a paid instance (Starter+); free plans cannot mount a disk.
+    # To enable: set `plan: starter` above, uncomment this block, and set UPLOADS_DIR below
+    # to /var/data/uploads. Without a disk, uploaded files are lost on restart/redeploy.
+    # disk:
+    #   name: uploads
+    #   mountPath: /var/data/uploads
+    #   sizeGB: 1
+
     envVars:
-      - key: APP_ENV
-        value: production
-      - key: AUTO_MIGRATE
-        value: "true"
-      - key: UPLOADS_DIR
-        value: /app/uploads
       - key: DATABASE_URL
         fromDatabase:
           name: fundly-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
+        generateValue: true          # Render generates a strong random secret once.
+      - key: APP_ENV
+        value: production
+      - key: AUTO_MIGRATE
+        value: "true"
+      - key: UPLOADS_DIR
+        value: ./uploads             # change to /var/data/uploads when using a disk
+      # --- Email (Gmail app password). Set these in the dashboard; they are not stored here.
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
@@ -36,10 +54,3 @@ services:
         sync: false
       - key: SMTP_FROM_NAME
         value: Fundly
-
-databases:
-  # Managed PostgreSQL Database
-  - name: fundly-db
-    plan: free
-    region: oregon
-    postgresMajorVersion: "16"

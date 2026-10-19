@@ -1,8 +1,11 @@
 .git
-.github
+.gitignore
 .env
+.env.*
+!.env.example
 uploads/
-docs/
 design/
+docs/
 *.md
-.DS_Store
+TODO.md
+docker-compose.yml

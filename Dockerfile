@@ -1,40 +1,30 @@
-FROM golang:alpine AS builder
+# syntax=docker/dockerfile:1
 
-WORKDIR /app
+# ---- build stage ----
+FROM golang:1.27-alpine AS build
+WORKDIR /src
 
-RUN apk add --no-cache git ca-certificates tzdata
-
+# Cache module downloads.
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Build a static binary (SQL migrations are embedded via go:embed, so they ship inside it).
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/fundly ./cmd/fundly
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /fundly ./cmd/fundly
-
-# Production runtime stage
-FROM alpine:3.21
-
-RUN apk add --no-cache ca-certificates tzdata curl
-
-# Create non-root user
-RUN addgroup -S fundly && adduser -S fundly -G fundly
-
+# ---- runtime stage ----
+FROM alpine:3.20
+# ca-certificates is required for TLS (Postgres SSL + Gmail SMTP STARTTLS).
+RUN apk add --no-cache ca-certificates tzdata && adduser -D -u 10001 app
 WORKDIR /app
+COPY --from=build /out/fundly /app/fundly
 
-# Create uploads directory and assign ownership
-RUN mkdir -p /app/uploads && chown -R fundly:fundly /app
+# Default uploads location. Mount a persistent disk here (set UPLOADS_DIR to match) if you
+# want avatars/attachments to survive restarts and deploys.
+RUN mkdir -p /app/uploads && chown -R app:app /app
+USER app
 
-COPY --from=builder /fundly /app/fundly
-
-USER fundly
-
-ENV PORT=8081 \
-    APP_ENV=production \
-    UPLOADS_DIR=/app/uploads
-
+# Informational only — the app binds to $PORT, which the host (e.g. Render) sets.
 EXPOSE 8081
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/health || exit 1
-
-CMD ["/app/fundly"]
+ENTRYPOINT ["/app/fundly"]
