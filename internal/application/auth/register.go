@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -106,6 +107,7 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, cmd RegisterCommand) (*R
 	otpSent := true
 	if uc.mailer != nil {
 		if err := uc.mailer.SendOTP(ctx, newUser.Email, fullName, otp); err != nil {
+			log.Printf("register: failed to send verification email to %s: %v", newUser.Email, err)
 			otpSent = false
 		}
 	}

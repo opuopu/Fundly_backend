@@ -140,7 +140,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, res, "Verification OTP sent to your email")
+	message := "Verification OTP sent to your email"
+	if !res.OTPSent {
+		message = "Account created, but we couldn't send the verification email. Please request a new OTP."
+	}
+	JSON(w, http.StatusCreated, res, message)
 }
 
 // VerifyOTP handles POST /api/v1/auth/verify-otp.
