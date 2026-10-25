@@ -13,6 +13,7 @@ import (
 	categoryapp "github.com/Dodul01/fundly/internal/application/category"
 	configapp "github.com/Dodul01/fundly/internal/application/config"
 	feedbackapp "github.com/Dodul01/fundly/internal/application/feedback"
+	privacypolicyapp "github.com/Dodul01/fundly/internal/application/privacypolicy"
 	reportapp "github.com/Dodul01/fundly/internal/application/report"
 	statapp "github.com/Dodul01/fundly/internal/application/stat"
 	termsapp "github.com/Dodul01/fundly/internal/application/terms"
@@ -41,6 +42,7 @@ func BuildRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	var configHandler *ConfigHandler
 	var feedbackHandler *FeedbackHandler
 	var termsHandler *TermsHandler
+	var privacyPolicyHandler *PrivacyPolicyHandler
 	var authMiddleware *AuthMiddleware
 
 	if pool != nil {
@@ -156,6 +158,11 @@ func BuildRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 		getLatestTermsUC := termsapp.NewGetLatestUseCase(termsRepo)
 		acknowledgeTermsUC := termsapp.NewAcknowledgeUseCase(termsRepo)
 		termsHandler = NewTermsHandler(getLatestTermsUC, acknowledgeTermsUC)
+
+		privacyPolicyRepo := postgres.NewPrivacyPolicyRepository(pool)
+		getLatestPrivacyPolicyUC := privacypolicyapp.NewGetLatestUseCase(privacyPolicyRepo)
+		acknowledgePrivacyPolicyUC := privacypolicyapp.NewAcknowledgeUseCase(privacyPolicyRepo)
+		privacyPolicyHandler = NewPrivacyPolicyHandler(getLatestPrivacyPolicyUC, acknowledgePrivacyPolicyUC)
 	}
 
 	handler := NewHandler(pool)
@@ -235,6 +242,11 @@ func BuildRouter(pool *pgxpool.Pool, cfg *config.Config) http.Handler {
 	if termsHandler != nil && authMiddleware != nil {
 		mux.HandleFunc("/api/v1/terms/latest", termsHandler.GetLatest)
 		mux.HandleFunc("/api/v1/terms/acknowledge", authMiddleware.RequireAuth(termsHandler.Acknowledge))
+	}
+
+	if privacyPolicyHandler != nil && authMiddleware != nil {
+		mux.HandleFunc("/api/v1/privacy-policy/latest", privacyPolicyHandler.GetLatest)
+		mux.HandleFunc("/api/v1/privacy-policy/acknowledge", authMiddleware.RequireAuth(privacyPolicyHandler.Acknowledge))
 	}
 
 	return mux

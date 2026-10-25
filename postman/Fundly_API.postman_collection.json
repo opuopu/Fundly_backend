@@ -596,7 +596,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"reset_code\": \"128333\",\n  \"new_password\": \"NewSecretPassword123!\"\n}",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"new_password\": \"NewSecretPassword123!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2503,6 +2503,104 @@
               ]
             },
             "description": "Records user acceptance timestamp for the specified Terms version."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has success=true envelope\", function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "13. Privacy Policy",
+      "description": "Public Privacy Policy retrieval and user acceptance acknowledgment.",
+      "item": [
+        {
+          "name": "Get Latest Privacy Policy (Public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/privacy-policy/latest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "privacy-policy",
+                "latest"
+              ]
+            },
+            "description": "Retrieves current active version of the Privacy Policy (public endpoint)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response has success=true envelope\", function () {",
+                  "    const res = pm.response.json();",
+                  "    pm.expect(res.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Acknowledge Privacy Policy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.0\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/privacy-policy/acknowledge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "privacy-policy",
+                "acknowledge"
+              ]
+            },
+            "description": "Records user acceptance timestamp for the specified Privacy Policy version."
           },
           "event": [
             {
