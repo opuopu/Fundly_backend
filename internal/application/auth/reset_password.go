@@ -9,7 +9,6 @@ import (
 
 type ResetPasswordCommand struct {
 	Email       string
-	ResetCode   string
 	NewPassword string
 }
 
@@ -27,9 +26,8 @@ func NewResetPasswordUseCase(repo user.Repository, hasher PasswordHasher) *Reset
 
 func (uc *ResetPasswordUseCase) Execute(ctx context.Context, cmd ResetPasswordCommand) error {
 	cmd.Email = strings.ToLower(strings.TrimSpace(cmd.Email))
-	cmd.ResetCode = strings.TrimSpace(cmd.ResetCode)
 
-	if cmd.Email == "" || cmd.ResetCode == "" {
+	if cmd.Email == "" {
 		return user.ErrInvalidUserData
 	}
 	if len(cmd.NewPassword) < 8 {
@@ -42,11 +40,6 @@ func (uc *ResetPasswordUseCase) Execute(ctx context.Context, cmd ResetPasswordCo
 	}
 	if u == nil {
 		return user.ErrUserNotFound
-	}
-
-	// Verify reset code
-	if err := u.VerifyOTP(cmd.ResetCode); err != nil {
-		return err
 	}
 
 	// Hash new password

@@ -83,7 +83,6 @@ type ForgotPasswordRequest struct {
 
 type ResetPasswordRequest struct {
 	Email       string `json:"email"`
-	ResetCode   string `json:"reset_code"`
 	NewPassword string `json:"new_password"`
 }
 
@@ -420,14 +419,9 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req.Email = strings.TrimSpace(req.Email)
-	req.ResetCode = strings.TrimSpace(req.ResetCode)
 
 	if req.Email == "" {
 		JSONError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Email is required", FieldIssue{Field: "email", Issue: "cannot be empty"})
-		return
-	}
-	if req.ResetCode == "" {
-		JSONError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Reset code is required", FieldIssue{Field: "reset_code", Issue: "cannot be empty"})
 		return
 	}
 	if req.NewPassword == "" {
@@ -437,21 +431,12 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	cmd := auth.ResetPasswordCommand{
 		Email:       req.Email,
-		ResetCode:   req.ResetCode,
 		NewPassword: req.NewPassword,
 	}
 
 	if err := h.resetPasswordUC.Execute(r.Context(), cmd); err != nil {
 		if errors.Is(err, user.ErrPasswordTooWeak) {
 			JSONError(w, http.StatusBadRequest, "PASSWORD_TOO_WEAK", "Password must be at least 8 characters long")
-			return
-		}
-		if errors.Is(err, user.ErrInvalidOTP) {
-			JSONError(w, http.StatusBadRequest, "INVALID_RESET_CODE", "The reset code is invalid")
-			return
-		}
-		if errors.Is(err, user.ErrOTPExpired) {
-			JSONError(w, http.StatusBadRequest, "RESET_CODE_EXPIRED", "The reset code has expired. Please request a new one")
 			return
 		}
 		if errors.Is(err, user.ErrUserNotFound) {

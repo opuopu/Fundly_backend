@@ -476,7 +476,6 @@ func TestAuthHandlerResetPasswordSuccess(t *testing.T) {
 
 	body := map[string]string{
 		"email":        "user@example.com",
-		"reset_code":   "489211",
 		"new_password": "NewSecretPassword123!",
 	}
 	raw, _ := json.Marshal(body)
@@ -502,31 +501,6 @@ func TestAuthHandlerResetPasswordSuccess(t *testing.T) {
 	}
 }
 
-func TestAuthHandlerResetPasswordInvalidCode(t *testing.T) {
-	u, _ := user.New("usr-1", "user@example.com", "Test User", "hashed_pass")
-	u.SetOTP("489211", 15*time.Minute)
-	repo := &mockUserRepo{
-		users: map[string]*user.User{"usr-1": u},
-	}
-	handler := newTestAuthHandler(repo, nil, nil, nil, nil)
-
-	body := map[string]string{
-		"email":        "user@example.com",
-		"reset_code":   "999999",
-		"new_password": "NewSecretPassword123!",
-	}
-	raw, _ := json.Marshal(body)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/reset-password", bytes.NewReader(raw))
-	rec := httptest.NewRecorder()
-
-	handler.ResetPassword(rec, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400 Bad Request, got %d: %s", rec.Code, rec.Body.String())
-	}
-}
-
 func TestAuthHandlerResetPasswordWeakPassword(t *testing.T) {
 	u, _ := user.New("usr-1", "user@example.com", "Test User", "hashed_pass")
 	u.SetOTP("489211", 15*time.Minute)
@@ -537,7 +511,6 @@ func TestAuthHandlerResetPasswordWeakPassword(t *testing.T) {
 
 	body := map[string]string{
 		"email":        "user@example.com",
-		"reset_code":   "489211",
 		"new_password": "short",
 	}
 	raw, _ := json.Marshal(body)

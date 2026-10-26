@@ -120,7 +120,7 @@ func (r *AttachmentRepository) LinkToTransaction(ctx context.Context, userID, tr
 		return nil
 	}
 	query := `UPDATE attachments SET transaction_id = $1 WHERE user_id = $2 AND id = ANY($3)`
-	if _, err := r.pool.Exec(ctx, query, transactionID, userID, attachmentIDs); err != nil {
+	if _, err := dbFromContext(ctx, r.pool).Exec(ctx, query, transactionID, userID, attachmentIDs); err != nil {
 		return fmt.Errorf("linking attachments to transaction: %w", err)
 	}
 	return nil

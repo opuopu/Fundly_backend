@@ -13,6 +13,7 @@ func TestCreateAccount_Success(t *testing.T) {
 	repo := &mockAccountRepo{
 		accounts: make(map[string]*domainAccount.Account),
 	}
+	
 	uc := appaccount.NewCreateAccountUseCase(repo)
 
 	input := appaccount.CreateAccountInput{
@@ -25,6 +26,7 @@ func TestCreateAccount_Success(t *testing.T) {
 	}
 
 	res, err := uc.Execute(context.Background(), input)
+	
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -32,27 +34,34 @@ func TestCreateAccount_Success(t *testing.T) {
 	if res.ID == "" {
 		t.Errorf("expected non-empty account ID")
 	}
+	
 	if res.Name != "Cash Wallet" {
 		t.Errorf("expected name 'Cash Wallet', got '%s'", res.Name)
 	}
+	
 	if res.Group != "cash" {
 		t.Errorf("expected group 'cash', got '%s'", res.Group)
 	}
+	
 	if res.Balance != 20000 {
 		t.Errorf("expected balance 20000, got %d", res.Balance)
 	}
+	
 	if res.Currency != "USD" {
 		t.Errorf("expected currency 'USD', got '%s'", res.Currency)
 	}
+	
 	if res.Description != "Physical wallet cash" {
 		t.Errorf("expected description 'Physical wallet cash', got '%s'", res.Description)
 	}
 
 	// Verify persistence in repo
 	saved, ok := repo.accounts[res.ID]
+	
 	if !ok {
 		t.Fatalf("expected account to be saved in repository")
 	}
+	
 	if saved.Balance != 20000 || saved.Name != "Cash Wallet" {
 		t.Errorf("saved account attributes do not match")
 	}
@@ -62,6 +71,7 @@ func TestCreateAccount_Defaults(t *testing.T) {
 	repo := &mockAccountRepo{
 		accounts: make(map[string]*domainAccount.Account),
 	}
+	
 	uc := appaccount.NewCreateAccountUseCase(repo)
 
 	input := appaccount.CreateAccountInput{
@@ -73,6 +83,7 @@ func TestCreateAccount_Defaults(t *testing.T) {
 	}
 
 	res, err := uc.Execute(context.Background(), input)
+	
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -92,6 +103,7 @@ func TestCreateAccount_InvalidName(t *testing.T) {
 	repo := &mockAccountRepo{
 		accounts: make(map[string]*domainAccount.Account),
 	}
+	
 	uc := appaccount.NewCreateAccountUseCase(repo)
 
 	input := appaccount.CreateAccountInput{
