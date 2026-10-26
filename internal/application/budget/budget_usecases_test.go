@@ -34,6 +34,9 @@ func TestCreateBudget_ComputesDerivedFields(t *testing.T) {
 	if res.UsagePercentage != 56.85 {
 		t.Errorf("expected usage 56.85, got %v", res.UsagePercentage)
 	}
+	if res.RemainingPercentage != 43.15 {
+		t.Errorf("expected remaining percentage 43.15, got %v", res.RemainingPercentage)
+	}
 	if res.Category == nil || res.Category.ID != "cat_food" {
 		t.Errorf("expected category ref, got %+v", res.Category)
 	}
