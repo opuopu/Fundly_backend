@@ -718,6 +718,7 @@ Every screen in the design is backed by specific REST endpoints:
         "icon": "bowl-food"
       },
       "month": "2026-09",
+      "date": "2026-09-16",
       "limit_amount": 80000, // $800.00
       "expenditure": 45480, // $454.80
       "remaining_amount": 34520, // $345.20

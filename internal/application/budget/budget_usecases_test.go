@@ -40,6 +40,9 @@ func TestCreateBudget_ComputesDerivedFields(t *testing.T) {
 	if res.Category == nil || res.Category.ID != "cat_food" {
 		t.Errorf("expected category ref, got %+v", res.Category)
 	}
+	if res.Date != "2026-09-01" {
+		t.Errorf("expected date defaulted to 2026-09-01, got %s", res.Date)
+	}
 }
 
 func TestCreateBudget_InvalidMonth(t *testing.T) {
@@ -111,7 +114,7 @@ func TestUpdateBudget_ChangesCategoryAndMonth(t *testing.T) {
 
 	uc := budgetapp.NewUpdateBudgetUseCase(repo, &mockCategoryRepo{}, mockSpent{})
 	newCategory := "cat_transport"
-	newMonth := "2026-10"
+	newMonth := "2026-10-25"
 	res, err := uc.Execute(context.Background(), budgetapp.UpdateBudgetInput{
 		UserID:     "usr_1",
 		ID:         "bg_1",
@@ -123,6 +126,9 @@ func TestUpdateBudget_ChangesCategoryAndMonth(t *testing.T) {
 	}
 	if res.Month != "2026-10" || res.Category == nil || res.Category.ID != "cat_transport" {
 		t.Errorf("unexpected update result: month=%s category=%+v", res.Month, res.Category)
+	}
+	if res.Date != "2026-10-25" {
+		t.Errorf("expected date updated to 2026-10-25, got %s", res.Date)
 	}
 }
 

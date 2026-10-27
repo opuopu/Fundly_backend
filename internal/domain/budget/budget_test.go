@@ -18,15 +18,19 @@ func TestNewBudget_Success(t *testing.T) {
 	if b.Month != "2026-09" {
 		t.Errorf("unexpected month %s", b.Month)
 	}
+	if got := b.Date.Format("2006-01-02"); got != "2026-09-01" {
+		t.Errorf("expected date defaulted to 2026-09-01, got %s", got)
+	}
 }
 
 func TestNewBudget_AcceptsFullDateForMonth(t *testing.T) {
 	cases := []struct {
-		name  string
-		input string
+		name     string
+		input    string
+		wantDate string
 	}{
-		{"full date", "2026-09-16"},
-		{"iso timestamp", "2026-09-16T00:00:00.000Z"},
+		{"full date", "2026-09-16", "2026-09-16"},
+		{"iso timestamp", "2026-09-16T00:00:00.000Z", "2026-09-16"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -36,6 +40,9 @@ func TestNewBudget_AcceptsFullDateForMonth(t *testing.T) {
 			}
 			if b.Month != "2026-09" {
 				t.Errorf("expected month normalized to 2026-09, got %s", b.Month)
+			}
+			if got := b.Date.Format("2006-01-02"); got != tc.wantDate {
+				t.Errorf("expected date %s, got %s", tc.wantDate, got)
 			}
 		})
 	}
@@ -88,12 +95,15 @@ func TestBudget_Update_CategoryAndMonth(t *testing.T) {
 	b, _ := budget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
 
 	newCategory := "cat_transport"
-	newMonth := "2026-10"
+	newMonth := "2026-10-25"
 	if err := b.Update(&newCategory, &newMonth, nil, nil, nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if b.CategoryID != "cat_transport" || b.Month != "2026-10" {
 		t.Errorf("expected category/month updated, got %s/%s", b.CategoryID, b.Month)
+	}
+	if got := b.Date.Format("2006-01-02"); got != "2026-10-25" {
+		t.Errorf("expected date updated to 2026-10-25, got %s", got)
 	}
 
 	badMonth := "2026/10"

@@ -35,11 +35,40 @@ func NormalizeMonth(s string) string {
 	return s
 }
 
+var dateLayouts = []string{time.RFC3339Nano, time.RFC3339, "2006-01-02"}
+
+// parseExactDate tries to parse s as a full calendar date (optionally with a time/zone
+// component). It returns false when s doesn't carry day-level precision (e.g. plain "2026-10").
+func parseExactDate(s string) (time.Time, bool) {
+	for _, layout := range dateLayouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
+// resolveMonthAndDate interprets the client-supplied value (YYYY-MM, YYYY-MM-DD, or an ISO
+// timestamp) and returns both the YYYY-MM identity used for budget uniqueness/filtering and the
+// specific calendar date to display, defaulting to the 1st when only a month was given.
+func resolveMonthAndDate(raw string) (month string, date time.Time, err error) {
+	month = NormalizeMonth(raw)
+	if !ValidMonth(month) {
+		return "", time.Time{}, ErrInvalidMonth
+	}
+	if d, ok := parseExactDate(strings.TrimSpace(raw)); ok {
+		return month, d, nil
+	}
+	firstOfMonth, _ := time.Parse("2006-01", month)
+	return month, firstOfMonth, nil
+}
+
 type Budget struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
 	CategoryID  string    `json:"category_id"`
 	Month       string    `json:"month"`
+	Date        time.Time `json:"date"`
 	LimitAmount int64     `json:"limit_amount"`
 	Currency    string    `json:"currency"`
 	Note        string    `json:"note,omitempty"`
@@ -54,9 +83,9 @@ func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency
 		return nil, ErrCategoryRequired
 	}
 
-	month = NormalizeMonth(month)
-	if !ValidMonth(month) {
-		return nil, ErrInvalidMonth
+	resolvedMonth, date, err := resolveMonthAndDate(month)
+	if err != nil {
+		return nil, err
 	}
 
 	if limitAmount <= 0 {
@@ -73,7 +102,8 @@ func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency
 		ID:          id,
 		UserID:      userID,
 		CategoryID:  categoryID,
-		Month:       month,
+		Month:       resolvedMonth,
+		Date:        date,
 		LimitAmount: limitAmount,
 		Currency:    currency,
 		Note:        strings.TrimSpace(note),
@@ -98,11 +128,12 @@ func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, des
 		b.CategoryID = trimmed
 	}
 	if month != nil {
-		normalized := NormalizeMonth(*month)
-		if !ValidMonth(normalized) {
-			return ErrInvalidMonth
+		resolvedMonth, date, err := resolveMonthAndDate(*month)
+		if err != nil {
+			return err
 		}
-		b.Month = normalized
+		b.Month = resolvedMonth
+		b.Date = date
 	}
 	if limitAmount != nil {
 		if *limitAmount <= 0 {

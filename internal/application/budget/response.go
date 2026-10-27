@@ -24,6 +24,7 @@ type BudgetResponse struct {
 	ID                  string       `json:"id"`
 	Category            *CategoryRef `json:"category,omitempty"`
 	Month               string       `json:"month"`
+	Date                string       `json:"date"`
 	LimitAmount         int64        `json:"limit_amount"`
 	Expenditure         int64        `json:"expenditure"`
 	RemainingAmount     int64        `json:"remaining_amount"`
@@ -60,6 +61,7 @@ func (b builder) toResponse(ctx context.Context, bg *domainBudget.Budget) Budget
 	res := BudgetResponse{
 		ID:                  bg.ID,
 		Month:               bg.Month,
+		Date:                bg.Date.Format("2006-01-02"),
 		LimitAmount:         bg.LimitAmount,
 		Expenditure:         spent,
 		RemainingAmount:     bg.LimitAmount - spent,

@@ -87,6 +87,9 @@ func TestBudgetHandler_Create(t *testing.T) {
 	if resp.Data.Expenditure != 45480 || resp.Data.RemainingAmount != 34520 {
 		t.Errorf("unexpected derived figures: %+v", resp.Data)
 	}
+	if resp.Data.Date != "2026-09-01" {
+		t.Errorf("expected date defaulted to 2026-09-01, got %s", resp.Data.Date)
+	}
 	if len(repo.budgets) != 1 {
 		t.Errorf("expected budget persisted, got %d", len(repo.budgets))
 	}
