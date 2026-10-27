@@ -44,7 +44,9 @@ type builder struct {
 
 func (b builder) toResponse(ctx context.Context, bg *domainBudget.Budget) BudgetResponse {
 	var spent int64
-	if b.spent != nil {
+	if bg.ManualExpenditure != nil {
+		spent = *bg.ManualExpenditure
+	} else if b.spent != nil {
 		if s, err := b.spent.SpentByCategoryMonth(ctx, bg.UserID, bg.CategoryID, bg.Month); err == nil {
 			spent = s
 		}

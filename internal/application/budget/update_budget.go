@@ -15,6 +15,7 @@ type UpdateBudgetInput struct {
 	LimitAmount *int64  `json:"limit_amount"`
 	Note        *string `json:"note"`
 	Description *string `json:"description"`
+	Expenditure *int64  `json:"expenditure"`
 }
 
 type UpdateBudgetUseCase struct {
@@ -36,7 +37,7 @@ func (uc *UpdateBudgetUseCase) Execute(ctx context.Context, input UpdateBudgetIn
 		return nil, domainBudget.ErrBudgetNotFound
 	}
 
-	if err := bg.Update(input.CategoryID, input.Month, input.LimitAmount, input.Note, input.Description); err != nil {
+	if err := bg.Update(input.CategoryID, input.Month, input.LimitAmount, input.Note, input.Description, input.Expenditure); err != nil {
 		return nil, err
 	}
 

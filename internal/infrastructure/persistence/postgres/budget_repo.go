@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const budgetColumns = `id, user_id, category_id, month, date, limit_amount, currency, note, description, created_at, updated_at`
+const budgetColumns = `id, user_id, category_id, month, date, limit_amount, manual_expenditure, currency, note, description, created_at, updated_at`
 
 type BudgetRepository struct {
 	pool *pgxpool.Pool
@@ -34,6 +34,7 @@ func scanBudget(row pgx.Row) (*budget.Budget, error) {
 		&b.Month,
 		&b.Date,
 		&b.LimitAmount,
+		&b.ManualExpenditure,
 		&b.Currency,
 		&note,
 		&descr,
@@ -53,11 +54,11 @@ func scanBudget(row pgx.Row) (*budget.Budget, error) {
 
 func (r *BudgetRepository) Create(ctx context.Context, b *budget.Budget) error {
 	query := `
-		INSERT INTO budgets (id, user_id, category_id, month, date, limit_amount, currency, note, description, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO budgets (id, user_id, category_id, month, date, limit_amount, manual_expenditure, currency, note, description, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		b.ID, b.UserID, b.CategoryID, b.Month, b.Date, b.LimitAmount, b.Currency,
+		b.ID, b.UserID, b.CategoryID, b.Month, b.Date, b.LimitAmount, b.ManualExpenditure, b.Currency,
 		nullIfEmpty(b.Note), nullIfEmpty(b.Description), b.CreatedAt, b.UpdatedAt,
 	)
 	if err != nil {
@@ -120,11 +121,11 @@ func (r *BudgetRepository) List(ctx context.Context, userID, month, categoryID s
 func (r *BudgetRepository) Update(ctx context.Context, b *budget.Budget) error {
 	query := `
 		UPDATE budgets
-		SET category_id = $2, month = $3, date = $4, limit_amount = $5, note = $6, description = $7, updated_at = $8
+		SET category_id = $2, month = $3, date = $4, limit_amount = $5, manual_expenditure = $6, note = $7, description = $8, updated_at = $9
 		WHERE id = $1
 	`
 	cmdTag, err := r.pool.Exec(ctx, query,
-		b.ID, b.CategoryID, b.Month, b.Date, b.LimitAmount, nullIfEmpty(b.Note), nullIfEmpty(b.Description), b.UpdatedAt,
+		b.ID, b.CategoryID, b.Month, b.Date, b.LimitAmount, b.ManualExpenditure, nullIfEmpty(b.Note), nullIfEmpty(b.Description), b.UpdatedAt,
 	)
 	if err != nil {
 		if strings.Contains(err.Error(), "uq_user_category_month") {

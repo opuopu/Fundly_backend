@@ -108,6 +108,34 @@ func TestBudgetHandler_Create_InvalidMonth(t *testing.T) {
 	}
 }
 
+func TestBudgetHandler_Update_OverridesExpenditure(t *testing.T) {
+	handler, repo := setupBudgetHandler(45480)
+	b, _ := domainBudget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
+	repo.budgets["bg_1"] = b
+
+	body := `{"expenditure":3000}`
+	req := authed(httptest.NewRequest(http.MethodPatch, "/api/v1/budgets/bg_1", strings.NewReader(body)), "usr_1")
+	req.SetPathValue("id", "bg_1")
+	rec := httptest.NewRecorder()
+
+	handler.HandleBudgetByID(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d. body: %s", rec.Code, rec.Body.String())
+	}
+
+	var resp struct {
+		Data budgetapp.BudgetResponse `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	// The stub's live-transaction total (45480) must be ignored once overridden.
+	if resp.Data.Expenditure != 3000 || resp.Data.RemainingAmount != 77000 {
+		t.Errorf("unexpected override result: %+v", resp.Data)
+	}
+}
+
 func TestBudgetHandler_Get_NotFound(t *testing.T) {
 	handler, _ := setupBudgetHandler(0)
 	req := authed(httptest.NewRequest(http.MethodGet, "/api/v1/budgets/bg_missing", nil), "usr_1")

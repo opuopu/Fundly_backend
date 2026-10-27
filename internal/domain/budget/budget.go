@@ -8,12 +8,13 @@ import (
 )
 
 var (
-	ErrBudgetNotFound   = errors.New("budget not found")
-	ErrInvalidMonth     = errors.New("month must be in YYYY-MM format")
-	ErrInvalidLimit     = errors.New("limit amount must be greater than zero")
-	ErrCategoryRequired = errors.New("category_id is required")
-	ErrNoFieldsToUpdate = errors.New("at least one field must be provided to update")
-	ErrBudgetExists     = errors.New("a budget already exists for this category and month")
+	ErrBudgetNotFound     = errors.New("budget not found")
+	ErrInvalidMonth       = errors.New("month must be in YYYY-MM format")
+	ErrInvalidLimit       = errors.New("limit amount must be greater than zero")
+	ErrInvalidExpenditure = errors.New("expenditure must be zero or greater")
+	ErrCategoryRequired   = errors.New("category_id is required")
+	ErrNoFieldsToUpdate   = errors.New("at least one field must be provided to update")
+	ErrBudgetExists       = errors.New("a budget already exists for this category and month")
 )
 
 var monthPattern = regexp.MustCompile(`^\d{4}-(0[1-9]|1[0-2])$`)
@@ -70,11 +71,14 @@ type Budget struct {
 	Month       string    `json:"month"`
 	Date        time.Time `json:"date"`
 	LimitAmount int64     `json:"limit_amount"`
-	Currency    string    `json:"currency"`
-	Note        string    `json:"note,omitempty"`
-	Description string    `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	// ManualExpenditure, when set, overrides the live sum of real EXPENSE transactions as the
+	// budget's reported expenditure. Nil means "use the calculated value" (the default).
+	ManualExpenditure *int64    `json:"-"`
+	Currency          string    `json:"currency"`
+	Note              string    `json:"note,omitempty"`
+	Description       string    `json:"description,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency, note, description string) (*Budget, error) {
@@ -115,9 +119,10 @@ func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency
 
 // Update applies the provided non-nil fields. categoryID and month together identify the
 // allocation, so changing either is allowed but re-validated the same way NewBudget does,
-// since the result still has to be a well-formed, uniquely-keyed allocation.
-func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, description *string) error {
-	if categoryID == nil && month == nil && limitAmount == nil && note == nil && description == nil {
+// since the result still has to be a well-formed, uniquely-keyed allocation. expenditure, when
+// provided, overrides the live transaction-calculated spend figure going forward.
+func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, description *string, expenditure *int64) error {
+	if categoryID == nil && month == nil && limitAmount == nil && note == nil && description == nil && expenditure == nil {
 		return ErrNoFieldsToUpdate
 	}
 	if categoryID != nil {
@@ -146,6 +151,12 @@ func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, des
 	}
 	if description != nil {
 		b.Description = strings.TrimSpace(*description)
+	}
+	if expenditure != nil {
+		if *expenditure < 0 {
+			return ErrInvalidExpenditure
+		}
+		b.ManualExpenditure = expenditure
 	}
 	b.UpdatedAt = time.Now().UTC()
 	return nil

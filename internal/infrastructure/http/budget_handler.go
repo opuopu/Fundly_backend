@@ -147,6 +147,7 @@ type UpdateBudgetRequest struct {
 	LimitAmount *int64  `json:"limit_amount"`
 	Note        *string `json:"note"`
 	Description *string `json:"description"`
+	Expenditure *int64  `json:"expenditure"`
 }
 
 // UpdateBudget handles PATCH /api/v1/budgets/{id}.
@@ -177,6 +178,7 @@ func (h *BudgetHandler) UpdateBudget(w http.ResponseWriter, r *http.Request) {
 		LimitAmount: req.LimitAmount,
 		Note:        req.Note,
 		Description: req.Description,
+		Expenditure: req.Expenditure,
 	})
 	if err != nil {
 		writeBudgetError(w, err, "Failed to update budget")
@@ -218,6 +220,8 @@ func writeBudgetError(w http.ResponseWriter, err error, fallback string) {
 		JSONError(w, http.StatusBadRequest, "INVALID_MONTH", "Month must be in YYYY-MM format")
 	case errors.Is(err, domainBudget.ErrInvalidLimit):
 		JSONError(w, http.StatusBadRequest, "INVALID_LIMIT", "Limit amount must be greater than zero")
+	case errors.Is(err, domainBudget.ErrInvalidExpenditure):
+		JSONError(w, http.StatusBadRequest, "INVALID_EXPENDITURE", "Expenditure must be zero or greater")
 	case errors.Is(err, domainBudget.ErrCategoryRequired):
 		JSONError(w, http.StatusBadRequest, "CATEGORY_REQUIRED", "category_id is required")
 	case errors.Is(err, domainBudget.ErrNoFieldsToUpdate):

@@ -107,6 +107,37 @@ func TestUpdateBudget_ChangesLimit(t *testing.T) {
 	}
 }
 
+func TestUpdateBudget_OverridesExpenditure(t *testing.T) {
+	repo := newMockBudgetRepo()
+	b, _ := domainBudget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
+	repo.budgets["bg_1"] = b
+
+	// The live-transaction total (40000) should be ignored once a manual override is set.
+	uc := budgetapp.NewUpdateBudgetUseCase(repo, &mockCategoryRepo{}, mockSpent{amount: 40000})
+	manual := int64(3000)
+	res, err := uc.Execute(context.Background(), budgetapp.UpdateBudgetInput{
+		UserID:      "usr_1",
+		ID:          "bg_1",
+		Expenditure: &manual,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Expenditure != 3000 || res.RemainingAmount != 77000 {
+		t.Errorf("unexpected override result: expenditure=%d remaining=%d", res.Expenditure, res.RemainingAmount)
+	}
+
+	negative := int64(-5)
+	_, err = uc.Execute(context.Background(), budgetapp.UpdateBudgetInput{
+		UserID:      "usr_1",
+		ID:          "bg_1",
+		Expenditure: &negative,
+	})
+	if !errors.Is(err, domainBudget.ErrInvalidExpenditure) {
+		t.Fatalf("expected ErrInvalidExpenditure, got %v", err)
+	}
+}
+
 func TestUpdateBudget_ChangesCategoryAndMonth(t *testing.T) {
 	repo := newMockBudgetRepo()
 	b, _ := domainBudget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
