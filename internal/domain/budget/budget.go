@@ -23,6 +23,18 @@ func ValidMonth(s string) bool {
 	return monthPattern.MatchString(strings.TrimSpace(s))
 }
 
+// NormalizeMonth accepts either YYYY-MM or a full date/timestamp (YYYY-MM-DD, optionally with
+// a time component, as date pickers commonly submit) and returns its YYYY-MM prefix. Inputs
+// that don't start with a recognizable YYYY-MM are returned unchanged, so ValidMonth still
+// rejects them with the usual error.
+func NormalizeMonth(s string) string {
+	s = strings.TrimSpace(s)
+	if len(s) > 7 && ValidMonth(s[:7]) {
+		return s[:7]
+	}
+	return s
+}
+
 type Budget struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
@@ -42,7 +54,7 @@ func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency
 		return nil, ErrCategoryRequired
 	}
 
-	month = strings.TrimSpace(month)
+	month = NormalizeMonth(month)
 	if !ValidMonth(month) {
 		return nil, ErrInvalidMonth
 	}
@@ -86,11 +98,11 @@ func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, des
 		b.CategoryID = trimmed
 	}
 	if month != nil {
-		trimmed := strings.TrimSpace(*month)
-		if !ValidMonth(trimmed) {
+		normalized := NormalizeMonth(*month)
+		if !ValidMonth(normalized) {
 			return ErrInvalidMonth
 		}
-		b.Month = trimmed
+		b.Month = normalized
 	}
 	if limitAmount != nil {
 		if *limitAmount <= 0 {

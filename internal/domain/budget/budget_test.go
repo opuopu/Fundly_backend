@@ -20,6 +20,27 @@ func TestNewBudget_Success(t *testing.T) {
 	}
 }
 
+func TestNewBudget_AcceptsFullDateForMonth(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{"full date", "2026-09-16"},
+		{"iso timestamp", "2026-09-16T00:00:00.000Z"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			b, err := budget.NewBudget("bg_1", "usr_1", "cat_food", tc.input, 80000, "USD", "", "")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if b.Month != "2026-09" {
+				t.Errorf("expected month normalized to 2026-09, got %s", b.Month)
+			}
+		})
+	}
+}
+
 func TestNewBudget_Validation(t *testing.T) {
 	cases := []struct {
 		name              string
