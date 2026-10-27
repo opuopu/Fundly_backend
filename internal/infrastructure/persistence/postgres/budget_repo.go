@@ -119,13 +119,16 @@ func (r *BudgetRepository) List(ctx context.Context, userID, month, categoryID s
 func (r *BudgetRepository) Update(ctx context.Context, b *budget.Budget) error {
 	query := `
 		UPDATE budgets
-		SET limit_amount = $2, note = $3, description = $4, updated_at = $5
+		SET category_id = $2, month = $3, limit_amount = $4, note = $5, description = $6, updated_at = $7
 		WHERE id = $1
 	`
 	cmdTag, err := r.pool.Exec(ctx, query,
-		b.ID, b.LimitAmount, nullIfEmpty(b.Note), nullIfEmpty(b.Description), b.UpdatedAt,
+		b.ID, b.CategoryID, b.Month, b.LimitAmount, nullIfEmpty(b.Note), nullIfEmpty(b.Description), b.UpdatedAt,
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "uq_user_category_month") {
+			return budget.ErrBudgetExists
+		}
 		return fmt.Errorf("updating budget: %w", err)
 	}
 	if cmdTag.RowsAffected() == 0 {

@@ -71,11 +71,26 @@ func NewBudget(id, userID, categoryID, month string, limitAmount int64, currency
 	}, nil
 }
 
-// Update applies the provided non-nil fields. Only limit, note and description are mutable
-// per the API spec (category and month identify the allocation).
-func (b *Budget) Update(limitAmount *int64, note, description *string) error {
-	if limitAmount == nil && note == nil && description == nil {
+// Update applies the provided non-nil fields. categoryID and month together identify the
+// allocation, so changing either is allowed but re-validated the same way NewBudget does,
+// since the result still has to be a well-formed, uniquely-keyed allocation.
+func (b *Budget) Update(categoryID, month *string, limitAmount *int64, note, description *string) error {
+	if categoryID == nil && month == nil && limitAmount == nil && note == nil && description == nil {
 		return ErrNoFieldsToUpdate
+	}
+	if categoryID != nil {
+		trimmed := strings.TrimSpace(*categoryID)
+		if trimmed == "" {
+			return ErrCategoryRequired
+		}
+		b.CategoryID = trimmed
+	}
+	if month != nil {
+		trimmed := strings.TrimSpace(*month)
+		if !ValidMonth(trimmed) {
+			return ErrInvalidMonth
+		}
+		b.Month = trimmed
 	}
 	if limitAmount != nil {
 		if *limitAmount <= 0 {

@@ -45,12 +45,12 @@ func TestNewBudget_Validation(t *testing.T) {
 func TestBudget_Update(t *testing.T) {
 	b, _ := budget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
 
-	if err := b.Update(nil, nil, nil); !errors.Is(err, budget.ErrNoFieldsToUpdate) {
+	if err := b.Update(nil, nil, nil, nil, nil); !errors.Is(err, budget.ErrNoFieldsToUpdate) {
 		t.Fatalf("expected ErrNoFieldsToUpdate, got %v", err)
 	}
 
 	newLimit := int64(90000)
-	if err := b.Update(&newLimit, nil, nil); err != nil {
+	if err := b.Update(nil, nil, &newLimit, nil, nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if b.LimitAmount != 90000 {
@@ -58,7 +58,30 @@ func TestBudget_Update(t *testing.T) {
 	}
 
 	zero := int64(0)
-	if err := b.Update(&zero, nil, nil); !errors.Is(err, budget.ErrInvalidLimit) {
+	if err := b.Update(nil, nil, &zero, nil, nil); !errors.Is(err, budget.ErrInvalidLimit) {
 		t.Fatalf("expected ErrInvalidLimit, got %v", err)
+	}
+}
+
+func TestBudget_Update_CategoryAndMonth(t *testing.T) {
+	b, _ := budget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
+
+	newCategory := "cat_transport"
+	newMonth := "2026-10"
+	if err := b.Update(&newCategory, &newMonth, nil, nil, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if b.CategoryID != "cat_transport" || b.Month != "2026-10" {
+		t.Errorf("expected category/month updated, got %s/%s", b.CategoryID, b.Month)
+	}
+
+	badMonth := "2026/10"
+	if err := b.Update(nil, &badMonth, nil, nil, nil); !errors.Is(err, budget.ErrInvalidMonth) {
+		t.Fatalf("expected ErrInvalidMonth, got %v", err)
+	}
+
+	emptyCategory := "  "
+	if err := b.Update(&emptyCategory, nil, nil, nil, nil); !errors.Is(err, budget.ErrCategoryRequired) {
+		t.Fatalf("expected ErrCategoryRequired, got %v", err)
 	}
 }

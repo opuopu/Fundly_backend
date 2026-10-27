@@ -10,6 +10,8 @@ import (
 type UpdateBudgetInput struct {
 	UserID      string  `json:"-"`
 	ID          string  `json:"-"`
+	CategoryID  *string `json:"category_id"`
+	Month       *string `json:"month"`
 	LimitAmount *int64  `json:"limit_amount"`
 	Note        *string `json:"note"`
 	Description *string `json:"description"`
@@ -34,7 +36,7 @@ func (uc *UpdateBudgetUseCase) Execute(ctx context.Context, input UpdateBudgetIn
 		return nil, domainBudget.ErrBudgetNotFound
 	}
 
-	if err := bg.Update(input.LimitAmount, input.Note, input.Description); err != nil {
+	if err := bg.Update(input.CategoryID, input.Month, input.LimitAmount, input.Note, input.Description); err != nil {
 		return nil, err
 	}
 

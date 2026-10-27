@@ -104,6 +104,28 @@ func TestUpdateBudget_ChangesLimit(t *testing.T) {
 	}
 }
 
+func TestUpdateBudget_ChangesCategoryAndMonth(t *testing.T) {
+	repo := newMockBudgetRepo()
+	b, _ := domainBudget.NewBudget("bg_1", "usr_1", "cat_food", "2026-09", 80000, "USD", "", "")
+	repo.budgets["bg_1"] = b
+
+	uc := budgetapp.NewUpdateBudgetUseCase(repo, &mockCategoryRepo{}, mockSpent{})
+	newCategory := "cat_transport"
+	newMonth := "2026-10"
+	res, err := uc.Execute(context.Background(), budgetapp.UpdateBudgetInput{
+		UserID:     "usr_1",
+		ID:         "bg_1",
+		CategoryID: &newCategory,
+		Month:      &newMonth,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Month != "2026-10" || res.Category == nil || res.Category.ID != "cat_transport" {
+		t.Errorf("unexpected update result: month=%s category=%+v", res.Month, res.Category)
+	}
+}
+
 func TestDeleteBudget_OwnershipGuard(t *testing.T) {
 	repo := newMockBudgetRepo()
 	b, _ := domainBudget.NewBudget("bg_1", "owner", "cat_food", "2026-09", 80000, "USD", "", "")

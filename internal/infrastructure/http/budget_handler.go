@@ -142,6 +142,8 @@ func (h *BudgetHandler) GetBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateBudgetRequest struct {
+	CategoryID  *string `json:"category_id"`
+	Month       *string `json:"month"`
 	LimitAmount *int64  `json:"limit_amount"`
 	Note        *string `json:"note"`
 	Description *string `json:"description"`
@@ -170,6 +172,8 @@ func (h *BudgetHandler) UpdateBudget(w http.ResponseWriter, r *http.Request) {
 	res, err := h.updateUC.Execute(r.Context(), budgetapp.UpdateBudgetInput{
 		UserID:      userID,
 		ID:          id,
+		CategoryID:  req.CategoryID,
+		Month:       req.Month,
 		LimitAmount: req.LimitAmount,
 		Note:        req.Note,
 		Description: req.Description,
