@@ -719,9 +719,10 @@ Every screen in the design is backed by specific REST endpoints:
       },
       "month": "2026-09",
       "limit_amount": 80000, // $800.00
-      "spent_amount": 45480, // $454.80
+      "expenditure": 45480, // $454.80
       "remaining_amount": 34520, // $345.20
       "usage_percentage": 56.85,
+      "remaining_percentage": 43.15,
       "currency": "USD",
       "created_at": "2026-09-01T00:00:00Z"
     }

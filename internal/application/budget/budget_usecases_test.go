@@ -25,8 +25,8 @@ func TestCreateBudget_ComputesDerivedFields(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if res.SpentAmount != 45480 {
-		t.Errorf("expected spent 45480, got %d", res.SpentAmount)
+	if res.Expenditure != 45480 {
+		t.Errorf("expected expenditure 45480, got %d", res.Expenditure)
 	}
 	if res.RemainingAmount != 34520 {
 		t.Errorf("expected remaining 34520, got %d", res.RemainingAmount)

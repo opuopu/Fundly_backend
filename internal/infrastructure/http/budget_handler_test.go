@@ -84,7 +84,7 @@ func TestBudgetHandler_Create(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("parse error: %v", err)
 	}
-	if resp.Data.SpentAmount != 45480 || resp.Data.RemainingAmount != 34520 {
+	if resp.Data.Expenditure != 45480 || resp.Data.RemainingAmount != 34520 {
 		t.Errorf("unexpected derived figures: %+v", resp.Data)
 	}
 	if len(repo.budgets) != 1 {
