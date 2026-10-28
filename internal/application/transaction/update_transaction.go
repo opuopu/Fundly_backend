@@ -10,14 +10,15 @@ import (
 )
 
 type UpdateTransactionInput struct {
-	UserID      string  `json:"-"`
-	ID          string  `json:"-"`
-	Amount      *int64  `json:"amount"`
-	Date        *string `json:"date"`
-	CategoryID  *string `json:"category_id"`
-	AccountID   *string `json:"account_id"`
-	Note        *string `json:"note"`
-	Description *string `json:"description"`
+	UserID        string   `json:"-"`
+	ID            string   `json:"-"`
+	Amount        *int64   `json:"amount"`
+	Date          *string  `json:"date"`
+	CategoryID    *string  `json:"category_id"`
+	AccountID     *string  `json:"account_id"`
+	Note          *string  `json:"note"`
+	Description   *string  `json:"description"`
+	AttachmentIDs []string `json:"attachment_ids"`
 }
 
 type UpdateTransactionUseCase struct {
@@ -57,8 +58,13 @@ func (uc *UpdateTransactionUseCase) Execute(ctx context.Context, input UpdateTra
 			datePtr = &d
 		}
 
-		if err := tx.Update(input.Amount, datePtr, input.CategoryID, input.AccountID, input.Note, input.Description); err != nil {
-			return err
+		hasFieldUpdate := input.Amount != nil || datePtr != nil || input.CategoryID != nil || input.AccountID != nil || input.Note != nil || input.Description != nil
+		if hasFieldUpdate {
+			if err := tx.Update(input.Amount, datePtr, input.CategoryID, input.AccountID, input.Note, input.Description); err != nil {
+				return err
+			}
+		} else if len(input.AttachmentIDs) == 0 {
+			return domainTx.ErrNoFieldsToUpdate
 		}
 
 		newAccountID := tx.AccountID()
@@ -115,7 +121,17 @@ func (uc *UpdateTransactionUseCase) Execute(ctx context.Context, input UpdateTra
 			}
 		}
 
-		return uc.txRepo.Update(ctx, tx)
+		if err := uc.txRepo.Update(ctx, tx); err != nil {
+			return err
+		}
+
+		// Associate any newly-referenced pre-uploaded attachments with this transaction.
+		if uc.attachments != nil && len(input.AttachmentIDs) > 0 {
+			if err := uc.attachments.LinkToTransaction(ctx, input.UserID, tx.ID, input.AttachmentIDs); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

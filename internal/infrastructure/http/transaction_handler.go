@@ -174,12 +174,13 @@ func (h *TransactionHandler) GetTransaction(w http.ResponseWriter, r *http.Reque
 }
 
 type UpdateTransactionRequest struct {
-	Amount      *int64  `json:"amount"`
-	Date        *string `json:"date"`
-	CategoryID  *string `json:"category_id"`
-	AccountID   *string `json:"account_id"`
-	Note        *string `json:"note"`
-	Description *string `json:"description"`
+	Amount        *int64   `json:"amount"`
+	Date          *string  `json:"date"`
+	CategoryID    *string  `json:"category_id"`
+	AccountID     *string  `json:"account_id"`
+	Note          *string  `json:"note"`
+	Description   *string  `json:"description"`
+	AttachmentIDs []string `json:"attachment_ids"`
 }
 
 // UpdateTransaction handles PATCH /api/v1/transactions/{id}.
@@ -203,14 +204,15 @@ func (h *TransactionHandler) UpdateTransaction(w http.ResponseWriter, r *http.Re
 	}
 
 	res, err := h.updateUC.Execute(r.Context(), txapp.UpdateTransactionInput{
-		UserID:      userID,
-		ID:          id,
-		Amount:      req.Amount,
-		Date:        req.Date,
-		CategoryID:  req.CategoryID,
-		AccountID:   req.AccountID,
-		Note:        req.Note,
-		Description: req.Description,
+		UserID:        userID,
+		ID:            id,
+		Amount:        req.Amount,
+		Date:          req.Date,
+		CategoryID:    req.CategoryID,
+		AccountID:     req.AccountID,
+		Note:          req.Note,
+		Description:   req.Description,
+		AttachmentIDs: req.AttachmentIDs,
 	})
 	if err != nil {
 		writeTransactionError(w, err, "Failed to update transaction")

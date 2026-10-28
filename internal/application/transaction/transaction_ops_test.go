@@ -87,6 +87,44 @@ func TestUpdateTransaction_AdjustsBalance(t *testing.T) {
 	}
 }
 
+func TestUpdateTransaction_LinksAttachments(t *testing.T) {
+	txRepo := newMockTxRepo()
+	accRepo := newMockAccountRepo()
+	catRepo := newMockCategoryRepo()
+	att := newMockAttachmentProvider()
+	seedAccount(accRepo, "acc_1", "usr_1", 10000)
+
+	createUC := txapp.NewCreateTransactionUseCase(txRepo, accRepo, catRepo, att, nil)
+	created, err := createUC.Execute(context.Background(), txapp.CreateTransactionInput{
+		UserID:        "usr_1",
+		Type:          "expense",
+		Amount:        2000,
+		CategoryID:    "cat_food",
+		AccountID:     "acc_1",
+		AttachmentIDs: []string{"att_1"},
+	})
+	if err != nil {
+		t.Fatalf("seed transaction failed: %v", err)
+	}
+
+	uc := txapp.NewUpdateTransactionUseCase(txRepo, accRepo, catRepo, att, nil)
+	res, err := uc.Execute(context.Background(), txapp.UpdateTransactionInput{
+		UserID:        "usr_1",
+		ID:            created.ID,
+		AttachmentIDs: []string{"att_2"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if res.AttachmentCount != 2 {
+		t.Errorf("expected attachment_count 2 after update, got %d", res.AttachmentCount)
+	}
+	if len(att.linked[created.ID]) != 2 {
+		t.Errorf("expected 2 attachments linked to tx, got %d: %v", len(att.linked[created.ID]), att.linked[created.ID])
+	}
+}
+
 func TestDeleteTransaction_ReversesBalance(t *testing.T) {
 	txRepo := newMockTxRepo()
 	accRepo := newMockAccountRepo()
